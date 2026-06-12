@@ -599,12 +599,20 @@ function App(){
   const[sortBy,setSortBy]=useState('dlc');
   const[showConsumed,setShowConsumed]=useState(false);
   const freezerIdRef=useRef('');
+  const migrationRef=useRef(null);
+  const[migratedCount,setMigratedCount]=useState(0);
 
   useEffect(()=>{
     const savedUser=ls('user');
     const savedFid=ls('freezer_id');
     const savedSett=ls('settings');
     const savedFbCfg=ls('fb_cfg');
+    // Détection données ancien format (avant v2)
+    const oldFoods=ls('foods');
+    const oldUser=ls('current_user');
+    if(!savedFid&&oldFoods&&oldFoods.length>0){
+      migrationRef.current={foods:oldFoods,user:oldUser,fbCfg:savedSett?.fbCfg||null,freezerType:savedSett?.freezer||'4etoiles'};
+    }
     if(savedUser&&savedFid&&savedSett){
       setCurUser(savedUser);setFreezerId(savedFid);freezerIdRef.current=savedFid;
       setSettings(savedSett);setFbCfgState(savedFbCfg);setReady(true);
@@ -633,6 +641,25 @@ function App(){
     ls('user',user);ls('freezer_id',fid);ls('settings',sett);ls('fb_cfg',fbCfg);
     if(fbCfg){const ok=initFB(fbCfg);setFbReady(ok);if(ok)startSync(fid);}
     askNotif();
+    // Migration des anciennes données
+    if(migrationRef.current){
+      const{foods:oldFoods}=migrationRef.current;
+      if(oldFoods&&oldFoods.length>0){
+        if(db&&fid){
+          const col=db.collection('freezers').doc(fid).collection('foods');
+          const batch=db.batch();
+          oldFoods.forEach(food=>{const{photo,...rest}=food;batch.set(col.doc(food.id||uid()),rest);});
+          batch.commit().catch(console.error);
+        }else{
+          ls('foods_cache',oldFoods);setFoods(oldFoods);
+        }
+        setMigratedCount(oldFoods.length);
+        // Nettoyage anciens clés
+        localStorage.removeItem('congelo_foods');
+        localStorage.removeItem('congelo_current_user');
+        migrationRef.current=null;
+      }
+    }
     if(isNew)setTimeout(()=>setShowShare(true),700);
   };
 
@@ -705,6 +732,7 @@ function App(){
         </div>
       </div>
       {alerts.expired>0&&<div className="banner expired">⚫ <span><strong>{alerts.expired} produit{alerts.expired>1?'s':''} périmé{alerts.expired>1?'s':''}</strong> — à vérifier ou jeter</span></div>}
+      {migratedCount>0&&<div className="banner" style={{background:'#dcfce7',color:'#15803d',border:'1px solid #86efac'}} onClick={()=>setMigratedCount(0)}>✅ <span><strong>{migratedCount} aliment{migratedCount>1?'s':''} récupérés</strong> depuis l'ancienne version · Appuyez pour fermer</span></div>}
       {alerts.critical>0&&<div className="banner critical">🔴 <span><strong>{alerts.critical} produit{alerts.critical>1?'s':''}</strong> à consommer dans moins de 7 jours</span></div>}
       {alerts.warning>0&&<div className="banner warn">🟡 <span><strong>{alerts.warning} produit{alerts.warning>1?'s':''}</strong> à planifier dans les 15 jours</span></div>}
       <div className="search-wrap"><span className="search-icon">🔍</span><input className="search-input" placeholder="Rechercher un aliment…" value={search} onChange={e=>setSearch(e.target.value)}/></div>
