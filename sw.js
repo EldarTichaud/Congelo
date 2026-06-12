@@ -1,5 +1,5 @@
 // CongélApp Service Worker v1
-const CACHE = 'congelapp-v1';
+const CACHE = 'congelo-v2';
 const PRECACHE = ['/', '/index.html', '/manifest.json'];
 
 // ── INSTALL ─────────────────────────────────────────────────────
