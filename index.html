@@ -6,633 +6,335 @@
   <meta name="theme-color" content="#1e3a5f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CongélApp">
-  <title>❄️ CongélApp</title>
+  <meta name="apple-mobile-web-app-title" content="Congelo">
+  <title>Congelo</title>
   <link rel="manifest" href="manifest.json">
-
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <style>
-    :root {
-      --primary: #1e3a5f;
-      --primary-mid: #1d4ed8;
-      --accent: #0ea5e9;
-      --bg: #f0f6ff;
-      --card: #ffffff;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --radius: 16px;
-      --shadow: 0 2px 10px rgba(0,0,0,0.07);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      max-width: 520px;
-      margin: 0 auto;
-    }
-    #root { min-height: 100vh; }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    :root { --primary:#1e3a5f;--primary-mid:#1d4ed8;--accent:#0ea5e9;--bg:#f0f6ff;--text:#1e293b;--text-muted:#64748b;--border:#e2e8f0;--radius:16px;--shadow:0 2px 10px rgba(0,0,0,.07); }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:520px;margin:0 auto;}
+    #root{min-height:100vh;}
+    ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+    @keyframes slideUp{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+    @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+    @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+    .slide-up{animation:slideUp .28s ease;}.fade-in{animation:fadeIn .2s ease;}
 
-    @keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-    .slide-up { animation: slideUp 0.28s ease; }
-    .fade-in  { animation: fadeIn 0.2s ease; }
-
-    /* ── HEADER ── */
-    .header {
-      background: var(--primary);
-      color: white;
-      padding: 14px 18px;
-      padding-top: calc(14px + env(safe-area-inset-top));
-      position: sticky; top: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .header-title { font-size: 19px; font-weight: 800; letter-spacing: -0.5px; }
-    .header-sub   { font-size: 11px; opacity: 0.65; margin-top: 1px; }
-    .header-right { display: flex; gap: 8px; align-items: center; }
-    .user-pill {
-      background: rgba(255,255,255,0.14);
-      border: 1px solid rgba(255,255,255,0.22);
-      border-radius: 20px; padding: 5px 12px;
-      font-size: 13px; cursor: pointer; transition: background .2s;
-    }
-    .user-pill:hover { background: rgba(255,255,255,0.24); }
-    .icon-btn {
-      background: rgba(255,255,255,0.1); border: none;
-      border-radius: 10px; width: 34px; height: 34px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; color: white; font-size: 17px; transition: background .2s;
-    }
-    .icon-btn:hover { background: rgba(255,255,255,0.2); }
-
-    /* ── BANNERS ── */
-    .banner {
-      margin: 10px 14px 0;
-      padding: 10px 14px;
-      border-radius: 12px;
-      display: flex; align-items: center; gap: 9px;
-      font-size: 13px; font-weight: 500;
-    }
-    .banner.expired  { background: #fef2f2; color: #7f1d1d; border: 1px solid #fca5a5; }
-    .banner.critical { background: #fff7ed; color: #7c2d12; border: 1px solid #fdba74; }
-    .banner.warn     { background: #fefce8; color: #713f12; border: 1px solid #fde047; }
-
-    /* ── SEARCH ── */
-    .search-wrap { padding: 12px 14px 0; position: relative; }
-    .search-icon { position: absolute; left: 26px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--text-muted); pointer-events: none; }
-    .search-input {
-      width: 100%; padding: 11px 14px 11px 40px;
-      border: 1.5px solid var(--border); border-radius: 14px;
-      font-size: 15px; background: white; outline: none;
-      transition: border-color .2s, box-shadow .2s; color: var(--text);
-    }
-    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,165,233,0.1); }
-
-    /* ── CHIPS ── */
-    .chips-scroll { display: flex; gap: 7px; padding: 10px 14px; overflow-x: auto; scrollbar-width: none; }
-    .chips-scroll::-webkit-scrollbar { display: none; }
-    .chip {
-      flex-shrink: 0; padding: 5px 13px; border-radius: 20px;
-      font-size: 12.5px; border: 1.5px solid var(--border);
-      background: white; cursor: pointer; transition: all .15s;
-      white-space: nowrap; color: var(--text-muted);
-    }
-    .chip.on { background: var(--primary); border-color: var(--primary); color: white; font-weight: 600; }
-
-    /* ── SORT BAR ── */
-    .sort-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 2px 14px 8px;
-    }
-    .sort-count { font-size: 12px; color: var(--text-muted); }
-    .sort-controls { display: flex; gap: 7px; align-items: center; }
-    .sort-sel, .toggle-consumed-btn {
-      padding: 5px 10px; border-radius: 10px; border: 1px solid var(--border);
-      background: white; font-size: 12px; cursor: pointer; color: var(--text);
-    }
-    .toggle-consumed-btn.on { color: #16a34a; border-color: #bbf7d0; background: #f0fdf4; }
-
-    /* ── FOOD LIST ── */
-    .food-list { padding: 0 14px 100px; display: flex; flex-direction: column; gap: 9px; }
-
-    /* ── FOOD CARD ── */
-    .food-card {
-      background: white; border-radius: var(--radius);
-      padding: 13px 15px; border: 1.5px solid;
-      box-shadow: var(--shadow); cursor: pointer;
-      transition: transform .15s; position: relative;
-    }
-    .food-card:active { transform: scale(0.985); }
-    .food-card.ok       { border-color: #a7f3d0; }
-    .food-card.soon     { border-color: #fde047; background: #fffef0; }
-    .food-card.warning  { border-color: #fdba74; background: #fff8f2; }
-    .food-card.critical { border-color: #fca5a5; background: #fff5f5; }
-    .food-card.expired  { border-color: #cbd5e1; background: #f8fafc; opacity: .75; }
-    .food-card.consumed { border-color: #e5e7eb; background: #fafafa; opacity: .5; }
-
-    .card-top { display: flex; align-items: flex-start; gap: 10px; }
-    .card-main { flex: 1; }
-    .food-name { font-size: 16px; font-weight: 700; }
-    .food-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-    .badge {
-      font-size: 11px; padding: 2px 8px; border-radius: 9px;
-      font-weight: 500; white-space: nowrap;
-    }
-    .b-cat  { background: #e0f2fe; color: #0369a1; }
-    .b-raw  { background: #fef9c3; color: #854d0e; }
-    .b-cook { background: #dcfce7; color: #166534; }
-    .b-who  { background: #f3e8ff; color: #7c3aed; }
-    .b-qty  { background: #f1f5f9; color: #475569; }
-    .b-decon{ background: #fef3c7; color: #b45309; }
-
-    .food-dlc { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
-    .dlc-date { font-size: 12.5px; color: var(--text-muted); }
-    .dlc-badge {
-      font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 9px;
-    }
-    .dlc-ok       { background: #dcfce7; color: #15803d; }
-    .dlc-soon     { background: #fef9c3; color: #854d0e; }
-    .dlc-warning  { background: #ffedd5; color: #9a3412; }
-    .dlc-critical { background: #fee2e2; color: #991b1b; }
-    .dlc-expired  { background: #f3f4f6; color: #6b7280; }
-
-    .card-photo { width: 54px; height: 54px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
-
-    .card-detail { padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--border); }
-    .card-note { font-size: 12.5px; color: var(--text-muted); font-style: italic; margin-bottom: 6px; }
-    .card-added { font-size: 11px; color: #94a3b8; margin-bottom: 8px; }
-    .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-    .ca-btn {
-      flex: 1; min-width: 70px; padding: 8px 6px; border-radius: 10px;
-      border: 1px solid var(--border); background: white; font-size: 12px;
-      cursor: pointer; text-align: center; transition: all .15s; color: var(--text-muted);
-    }
-    .ca-btn:hover { background: var(--bg); }
-    .ca-edit    { color: #2563eb; border-color: #bfdbfe; }
-    .ca-edit:hover { background: #eff6ff; }
-    .ca-decon   { color: #b45309; border-color: #fde68a; }
-    .ca-decon:hover { background: #fefce8; }
-    .ca-ok      { color: #16a34a; border-color: #bbf7d0; }
-    .ca-ok:hover { background: #f0fdf4; }
-    .ca-back    { color: #64748b; }
-    .ca-del     { color: #ef4444; border-color: #fecaca; }
-    .ca-del:hover { background: #fef2f2; }
-
-    /* ── FAB ── */
-    .fab {
-      position: fixed;
-      bottom: calc(22px + env(safe-area-inset-bottom)); right: 18px;
-      width: 58px; height: 58px; border-radius: 29px;
-      background: var(--primary-mid); color: white; border: none;
-      font-size: 28px; cursor: pointer;
-      box-shadow: 0 4px 18px rgba(29,78,216,0.4);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 200; transition: transform .2s, box-shadow .2s;
-    }
-    .fab:hover  { transform: scale(1.08); box-shadow: 0 6px 24px rgba(29,78,216,0.5); }
-    .fab:active { transform: scale(0.93); }
-
-    /* ── MODAL (bottom sheet) ── */
-    .overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.38);
-      z-index: 300; display: flex; align-items: flex-end;
-      animation: fadeIn .2s ease;
-    }
-    .sheet {
-      background: white; width: 100%; max-width: 520px; margin: 0 auto;
-      border-radius: 22px 22px 0 0;
-      padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
-      max-height: 93vh; overflow-y: auto;
-      animation: slideUp .28s ease;
-    }
-    .sheet-handle { width: 38px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
-    .sheet-title  { font-size: 19px; font-weight: 700; margin-bottom: 18px; }
-
-    /* ── FULL SCREEN ── */
-    .fullscreen {
-      position: fixed; inset: 0; background: var(--bg);
-      z-index: 300; overflow-y: auto;
-      animation: slideUp .28s ease;
-    }
-    .fs-header {
-      background: white; padding: 14px 18px;
-      padding-top: calc(14px + env(safe-area-inset-top));
-      display: flex; align-items: center; gap: 10px;
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 10;
-    }
-    .fs-title  { font-size: 17px; font-weight: 700; }
-    .fs-body   { padding: 18px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
-    .back-btn  {
-      background: none; border: none; font-size: 22px;
-      cursor: pointer; color: var(--text); width: 34px; height: 34px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 9px; transition: background .15s; flex-shrink: 0;
-    }
-    .back-btn:hover { background: var(--border); }
-
-    /* ── FORM ── */
-    .fg { margin-bottom: 15px; }
-    .fl {
-      display: block; font-size: 11.5px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .6px;
-      color: var(--text-muted); margin-bottom: 5px;
-    }
-    .fi, .fs-sel, .fta {
-      width: 100%; padding: 11px 13px;
-      border: 1.5px solid var(--border); border-radius: 12px;
-      font-size: 15px; outline: none;
-      transition: border-color .2s, box-shadow .2s;
-      background: white; color: var(--text); font-family: inherit;
-    }
-    .fi:focus, .fs-sel:focus, .fta:focus {
-      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,165,233,0.1);
-    }
-    .fta { resize: vertical; min-height: 76px; }
-    .qty-row { display: flex; gap: 9px; }
-    .qty-row .fi { flex: 1; }
-    .qty-row .fs-sel { flex: 1; }
-
-    .toggle-group { display: flex; gap: 8px; }
-    .tg-btn {
-      flex: 1; padding: 10px; border-radius: 12px; border: 1.5px solid var(--border);
-      background: white; font-size: 14px; cursor: pointer; text-align: center;
-      transition: all .15s; color: var(--text-muted);
-    }
-    .tg-btn.on { background: var(--primary); border-color: var(--primary); color: white; font-weight: 600; }
-
-    .dlc-preview {
-      background: #f0f9ff; border: 1px solid #bae6fd;
-      border-radius: 12px; padding: 11px 13px;
-      font-size: 13px; color: #0369a1;
-      display: flex; align-items: center; gap: 7px; margin-bottom: 14px;
-    }
-
-    .override-row {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--text-muted); cursor: pointer; margin-bottom: 8px;
-    }
-
-    .photo-zone {
-      border: 2px dashed var(--border); border-radius: 12px;
-      padding: 20px; text-align: center; cursor: pointer;
-      transition: all .15s; color: var(--text-muted);
-    }
-    .photo-zone:hover { border-color: var(--accent); color: var(--accent); }
-    .photo-thumb { width: 100%; height: 160px; object-fit: cover; border-radius: 12px; }
-
-    .btn { padding: 13px 18px; border-radius: 13px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; width: 100%; transition: all .15s; }
-    .btn-primary { background: var(--primary-mid); color: white; }
-    .btn-primary:hover { background: #1d40af; }
-    .btn-primary:disabled { opacity: .5; cursor: default; }
-    .btn-ghost  { background: var(--bg); color: var(--text-muted); margin-top: 8px; }
-    .btn-danger { background: #ef4444; color: white; }
-
-    /* ── SETTINGS ── */
-    .sec-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px; }
-    .srow {
-      background: white; border: 1px solid var(--border); border-radius: 12px;
-      padding: 13px 14px; display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 7px; cursor: pointer; transition: background .15s;
-    }
-    .srow:hover { background: var(--bg); }
-    .srow.active { border-color: #2563eb; background: #eff6ff; }
-    .srow-label { font-size: 15px; }
-    .srow-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .srow-check { color: #2563eb; font-weight: 700; font-size: 16px; }
-    .status-pill {
-      display: flex; align-items: center; gap: 7px;
-      font-size: 13px; padding: 9px 13px; border-radius: 10px; margin-bottom: 7px;
-    }
-    .status-pill.ok   { background: #dcfce7; color: #15803d; }
-    .status-pill.warn { background: #fef9c3; color: #854d0e; }
-    .status-pill.err  { background: #fee2e2; color: #991b1b; }
-
-    /* ── ONBOARDING ── */
-    .onboard {
-      min-height: 100vh; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; padding: 28px 22px;
-      background: linear-gradient(155deg,#1e3a5f 0%,#1e40af 55%,#0ea5e9 100%);
-      color: white;
-    }
-    .ob-logo  { font-size: 62px; margin-bottom: 10px; }
-    .ob-title { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 5px; }
-    .ob-sub   { font-size: 15px; opacity: .75; text-align: center; margin-bottom: 36px; }
-    .ob-card  {
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 20px; padding: 24px 20px; width: 100%; max-width: 400px;
-    }
-    .ob-card-title { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
-    .ob-user-btn {
-      display: flex; align-items: center; gap: 13px;
-      width: 100%; padding: 15px 18px; border-radius: 15px;
-      border: 2px solid rgba(255,255,255,0.22);
-      background: rgba(255,255,255,0.06); color: white;
-      font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 10px;
-      transition: all .2s;
-    }
-    .ob-user-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.45); }
-    .ob-frow {
-      display: flex; align-items: center; gap: 11px;
-      padding: 13px 15px; border-radius: 14px;
-      border: 2px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.05); color: white; cursor: pointer;
-      margin-bottom: 9px; transition: all .2s;
-    }
-    .ob-frow:hover, .ob-frow.on { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.5); }
-    .ob-frow-txt .title { font-size: 14.5px; font-weight: 600; }
-    .ob-frow-txt .sub   { font-size: 12px; opacity: .65; margin-top: 2px; }
-    .ob-frow .check     { margin-left: auto; font-size: 16px; }
-    .ob-link   { font-size: 12px; opacity: .6; text-align: center; margin-top: 9px; }
-    .ob-link a { color: rgba(255,255,255,.8); }
-    .ob-continue {
-      width: 100%; margin-top: 15px; padding: 13px;
-      border-radius: 13px; border: none; cursor: pointer;
-      background: rgba(255,255,255,0.18); color: white;
-      font-size: 15px; font-weight: 600; transition: background .2s;
-    }
-    .ob-continue:hover { background: rgba(255,255,255,0.28); }
-    .ob-skip {
-      background: none; border: none; color: rgba(255,255,255,.55);
-      font-size: 13px; cursor: pointer; text-decoration: underline; margin-top: 14px;
-      display: block; width: 100%; text-align: center;
-    }
-    .ob-fi, .ob-fta {
-      width: 100%; padding: 11px 13px;
-      background: rgba(255,255,255,0.1); color: white;
-      border: 1.5px solid rgba(255,255,255,0.25);
-      border-radius: 12px; font-size: 14px; font-family: monospace; outline: none;
-    }
-    .ob-fta { resize: vertical; min-height: 130px; }
-    .ob-fi::placeholder, .ob-fta::placeholder { color: rgba(255,255,255,0.4); }
-    .ob-err { font-size: 12px; color: #fca5a5; margin-top: 5px; }
-
-    /* ── EMPTY STATE ── */
-    .empty { text-align: center; padding: 55px 22px; color: var(--text-muted); }
-    .empty-ico { font-size: 58px; margin-bottom: 13px; }
-    .empty h3  { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 7px; }
-    .empty p   { font-size: 14px; }
+    .header{background:var(--primary);color:white;padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
+    .header-title{font-size:18px;font-weight:800;letter-spacing:-.5px;}
+    .header-sub{font-size:11px;opacity:.65;margin-top:1px;}
+    .header-right{display:flex;gap:7px;align-items:center;}
+    .user-pill{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:5px 11px;font-size:13px;cursor:pointer;transition:background .2s;}
+    .user-pill:hover{background:rgba(255,255,255,.24);}
+    .icon-btn{background:rgba(255,255,255,.1);border:none;border-radius:9px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:16px;transition:background .2s;}
+    .icon-btn:hover{background:rgba(255,255,255,.2);}
+    .banner{margin:10px 14px 0;padding:10px 14px;border-radius:12px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;}
+    .banner.expired{background:#fef2f2;color:#7f1d1d;border:1px solid #fca5a5;}
+    .banner.critical{background:#fff7ed;color:#7c2d12;border:1px solid #fdba74;}
+    .banner.warn{background:#fefce8;color:#713f12;border:1px solid #fde047;}
+    .search-wrap{padding:12px 14px 0;position:relative;}
+    .search-icon{position:absolute;left:26px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--text-muted);pointer-events:none;}
+    .search-input{width:100%;padding:11px 14px 11px 40px;border:1.5px solid var(--border);border-radius:14px;font-size:15px;background:white;outline:none;transition:border-color .2s,box-shadow .2s;color:var(--text);}
+    .search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,165,233,.1);}
+    .chips-scroll{display:flex;gap:7px;padding:10px 14px;overflow-x:auto;scrollbar-width:none;}
+    .chips-scroll::-webkit-scrollbar{display:none;}
+    .chip{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:12.5px;border:1.5px solid var(--border);background:white;cursor:pointer;transition:all .15s;white-space:nowrap;color:var(--text-muted);}
+    .chip.on{background:var(--primary);border-color:var(--primary);color:white;font-weight:600;}
+    .sort-bar{display:flex;align-items:center;justify-content:space-between;padding:2px 14px 8px;}
+    .sort-count{font-size:12px;color:var(--text-muted);}
+    .sort-controls{display:flex;gap:7px;align-items:center;}
+    .sort-sel,.toggle-consumed-btn{padding:5px 10px;border-radius:10px;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;color:var(--text);}
+    .toggle-consumed-btn.on{color:#16a34a;border-color:#bbf7d0;background:#f0fdf4;}
+    .food-list{padding:0 14px 100px;display:flex;flex-direction:column;gap:9px;}
+    .food-card{background:white;border-radius:var(--radius);padding:13px 15px;border:1.5px solid;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s;}
+    .food-card:active{transform:scale(.985);}
+    .food-card.ok{border-color:#a7f3d0;}.food-card.soon{border-color:#fde047;background:#fffef0;}
+    .food-card.warning{border-color:#fdba74;background:#fff8f2;}.food-card.critical{border-color:#fca5a5;background:#fff5f5;}
+    .food-card.expired{border-color:#cbd5e1;background:#f8fafc;opacity:.75;}.food-card.consumed{border-color:#e5e7eb;background:#fafafa;opacity:.5;}
+    .card-top{display:flex;align-items:flex-start;gap:10px;}.card-main{flex:1;}
+    .food-name{font-size:16px;font-weight:700;}
+    .food-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+    .badge{font-size:11px;padding:2px 8px;border-radius:9px;font-weight:500;white-space:nowrap;}
+    .b-cat{background:#e0f2fe;color:#0369a1;}.b-raw{background:#fef9c3;color:#854d0e;}
+    .b-cook{background:#dcfce7;color:#166534;}.b-who{background:#f3e8ff;color:#7c3aed;}
+    .b-qty{background:#f1f5f9;color:#475569;}.b-decon{background:#fef3c7;color:#b45309;}
+    .food-dlc{display:flex;align-items:center;gap:7px;margin-top:7px;}
+    .dlc-date{font-size:12.5px;color:var(--text-muted);}
+    .dlc-badge{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:9px;}
+    .dlc-ok{background:#dcfce7;color:#15803d;}.dlc-soon{background:#fef9c3;color:#854d0e;}
+    .dlc-warning{background:#ffedd5;color:#9a3412;}.dlc-critical{background:#fee2e2;color:#991b1b;}
+    .dlc-expired{background:#f3f4f6;color:#6b7280;}
+    .card-photo{width:54px;height:54px;border-radius:10px;object-fit:cover;flex-shrink:0;}
+    .card-detail{padding-top:10px;margin-top:10px;border-top:1px solid var(--border);}
+    .card-note{font-size:12.5px;color:var(--text-muted);font-style:italic;margin-bottom:6px;}
+    .card-added{font-size:11px;color:#94a3b8;margin-bottom:8px;}
+    .card-actions{display:flex;gap:6px;flex-wrap:wrap;}
+    .ca-btn{flex:1;min-width:70px;padding:8px 6px;border-radius:10px;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;text-align:center;transition:all .15s;color:var(--text-muted);}
+    .ca-btn:hover{background:var(--bg);}
+    .ca-edit{color:#2563eb;border-color:#bfdbfe;}.ca-edit:hover{background:#eff6ff;}
+    .ca-decon{color:#b45309;border-color:#fde68a;}.ca-decon:hover{background:#fefce8;}
+    .ca-ok{color:#16a34a;border-color:#bbf7d0;}.ca-ok:hover{background:#f0fdf4;}
+    .ca-back{color:#64748b;}.ca-del{color:#ef4444;border-color:#fecaca;}.ca-del:hover{background:#fef2f2;}
+    .fab{position:fixed;bottom:calc(22px + env(safe-area-inset-bottom));right:18px;width:58px;height:58px;border-radius:29px;background:var(--primary-mid);color:white;border:none;font-size:28px;cursor:pointer;box-shadow:0 4px 18px rgba(29,78,216,.4);display:flex;align-items:center;justify-content:center;z-index:200;transition:transform .2s,box-shadow .2s;}
+    .fab:hover{transform:scale(1.08);}.fab:active{transform:scale(.93);}
+    .fab-secondary{position:fixed;bottom:calc(92px + env(safe-area-inset-bottom));right:18px;width:46px;height:46px;border-radius:23px;background:white;color:var(--primary);border:2px solid var(--primary);font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;z-index:200;transition:transform .2s;}
+    .fab-secondary:hover{transform:scale(1.08);}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:300;display:flex;align-items:flex-end;animation:fadeIn .2s ease;}
+    .sheet{background:white;width:100%;max-width:520px;margin:0 auto;border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:93vh;overflow-y:auto;animation:slideUp .28s ease;}
+    .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;}
+    .sheet-title{font-size:19px;font-weight:700;margin-bottom:18px;}
+    .fullscreen{position:fixed;inset:0;background:var(--bg);z-index:300;overflow-y:auto;animation:slideUp .28s ease;}
+    .fs-header{background:white;padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;}
+    .fs-title{font-size:17px;font-weight:700;}.fs-body{padding:18px;padding-bottom:calc(24px + env(safe-area-inset-bottom));}
+    .back-btn{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text);width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;transition:background .15s;flex-shrink:0;}
+    .back-btn:hover{background:var(--border);}
+    .fg{margin-bottom:15px;}
+    .fl{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);margin-bottom:5px;}
+    .fi,.fs-sel,.fta{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;background:white;color:var(--text);font-family:inherit;}
+    .fi:focus,.fs-sel:focus,.fta:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,165,233,.1);}
+    .fta{resize:vertical;min-height:76px;}
+    .qty-row{display:flex;gap:9px;}.qty-row .fi,.qty-row .fs-sel{flex:1;}
+    .toggle-group{display:flex;gap:8px;}
+    .tg-btn{flex:1;padding:10px;border-radius:12px;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;text-align:center;transition:all .15s;color:var(--text-muted);}
+    .tg-btn.on{background:var(--primary);border-color:var(--primary);color:white;font-weight:600;}
+    .dlc-preview{background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:11px 13px;font-size:13px;color:#0369a1;display:flex;align-items:center;gap:7px;margin-bottom:14px;}
+    .override-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);cursor:pointer;margin-bottom:8px;}
+    .photo-zone{border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .15s;color:var(--text-muted);}
+    .photo-zone:hover{border-color:var(--accent);color:var(--accent);}
+    .photo-thumb{width:100%;height:160px;object-fit:cover;border-radius:12px;}
+    .btn{padding:13px 18px;border-radius:13px;font-size:15px;font-weight:600;cursor:pointer;border:none;width:100%;transition:all .15s;}
+    .btn-primary{background:var(--primary-mid);color:white;}.btn-primary:hover{background:#1d40af;}.btn-primary:disabled{opacity:.5;cursor:default;}
+    .btn-ghost{background:var(--bg);color:var(--text-muted);margin-top:8px;}
+    .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;}
+    .srow{background:white;border:1px solid var(--border);border-radius:12px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;cursor:pointer;transition:background .15s;}
+    .srow:hover{background:var(--bg);}.srow.active{border-color:#2563eb;background:#eff6ff;}
+    .srow-label{font-size:15px;}.srow-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}.srow-check{color:#2563eb;font-weight:700;font-size:16px;}
+    .status-pill{display:flex;align-items:center;gap:7px;font-size:13px;padding:9px 13px;border-radius:10px;margin-bottom:7px;}
+    .status-pill.ok{background:#dcfce7;color:#15803d;}.status-pill.warn{background:#fef9c3;color:#854d0e;}.status-pill.err{background:#fee2e2;color:#991b1b;}
+    .ai-result-item{background:white;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:10px;}
+    .ai-result-item.selected{border-color:#2563eb;background:#eff6ff;}
+    .ai-result-check{width:20px;height:20px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:12px;}
+    .ai-result-item.selected .ai-result-check{background:#2563eb;border-color:#2563eb;color:white;}
+    .ai-result-name{font-size:15px;font-weight:600;}.ai-result-meta{font-size:12px;color:var(--text-muted);margin-top:3px;}
+    .ai-loading{text-align:center;padding:40px 20px;color:var(--text-muted);}
+    .ai-loading-spinner{font-size:40px;animation:spin 1.5s linear infinite;display:inline-block;margin-bottom:12px;}
+    .ai-photo-preview{width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:14px;}
+    .onboard{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 22px;background:linear-gradient(155deg,#1e3a5f 0%,#1e40af 55%,#0ea5e9 100%);color:white;}
+    .ob-logo{font-size:62px;margin-bottom:10px;}.ob-title{font-size:28px;font-weight:800;text-align:center;margin-bottom:5px;}
+    .ob-sub{font-size:15px;opacity:.75;text-align:center;margin-bottom:36px;}
+    .ob-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:24px 20px;width:100%;max-width:400px;}
+    .ob-card-title{font-size:17px;font-weight:700;margin-bottom:18px;}
+    .ob-user-btn{display:flex;align-items:center;gap:13px;width:100%;padding:15px 18px;border-radius:15px;border:2px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:white;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px;transition:all .2s;text-align:left;}
+    .ob-user-btn:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.45);}
+    .ob-user-btn-sub{font-size:12px;opacity:.65;font-weight:400;margin-top:2px;}
+    .ob-frow{display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:14px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);color:white;cursor:pointer;margin-bottom:9px;transition:all .2s;}
+    .ob-frow:hover,.ob-frow.on{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.5);}
+    .ob-frow-txt .title{font-size:14.5px;font-weight:600;}.ob-frow-txt .sub{font-size:12px;opacity:.65;margin-top:2px;}
+    .ob-frow .check{margin-left:auto;font-size:16px;}
+    .ob-link{font-size:12px;opacity:.6;text-align:center;margin-top:9px;}.ob-link a{color:rgba(255,255,255,.8);}
+    .ob-continue{width:100%;margin-top:15px;padding:13px;border-radius:13px;border:none;cursor:pointer;background:rgba(255,255,255,.18);color:white;font-size:15px;font-weight:600;transition:background .2s;}
+    .ob-continue:hover{background:rgba(255,255,255,.28);}
+    .ob-skip{background:none;border:none;color:rgba(255,255,255,.55);font-size:13px;cursor:pointer;text-decoration:underline;margin-top:14px;display:block;width:100%;text-align:center;}
+    .ob-fi,.ob-fta{width:100%;padding:11px 13px;background:rgba(255,255,255,.1);color:white;border:1.5px solid rgba(255,255,255,.25);border-radius:12px;font-size:14px;font-family:monospace;outline:none;}
+    .ob-fta{resize:vertical;min-height:130px;}
+    .ob-fi::placeholder,.ob-fta::placeholder{color:rgba(255,255,255,.4);}
+    .ob-fi-plain{width:100%;padding:11px 13px;background:rgba(255,255,255,.1);color:white;border:1.5px solid rgba(255,255,255,.25);border-radius:12px;font-size:15px;font-family:inherit;outline:none;margin-bottom:12px;}
+    .ob-fi-plain::placeholder{color:rgba(255,255,255,.45);}
+    .ob-err{font-size:12px;color:#fca5a5;margin-top:5px;}
+    .share-url{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-family:monospace;font-size:12px;word-break:break-all;color:var(--text-muted);}
+    .empty{text-align:center;padding:55px 22px;color:var(--text-muted);}
+    .empty-ico{font-size:58px;margin-bottom:13px;}.empty h3{font-size:17px;font-weight:700;color:var(--text);margin-bottom:7px;}.empty p{font-size:14px;}
   </style>
 </head>
 <body>
-  <div id="root"></div>
-
+<div id="root"></div>
 <script type="text/babel">
 const { useState, useEffect, useMemo, useRef } = React;
 
-// ================================================================
-// CONSTANTS
-// ================================================================
-
 const CATS = [
-  { id:'fruit',           emoji:'🍎', label:'Fruits',           rc: true,  rlab:'Cru',   clab:'Cuit'  },
-  { id:'legume',          emoji:'🥦', label:'Légumes',          rc: true,  rlab:'Cru',   clab:'Cuit'  },
-  { id:'viande',          emoji:'🥩', label:'Viande',           rc: true,  rlab:'Crue',  clab:'Cuite' },
-  { id:'viande_hachee',   emoji:'🫕', label:'Viande hachée',    rc: true,  rlab:'Crue',  clab:'Cuite' },
-  { id:'poisson_maigre',  emoji:'🐟', label:'Poisson maigre',   rc: true,  rlab:'Cru',   clab:'Cuit'  },
-  { id:'poisson_gras',    emoji:'🐠', label:'Poisson gras',     rc: true,  rlab:'Cru',   clab:'Cuit'  },
-  { id:'produit_laitier', emoji:'🧀', label:'Produit laitier',  rc: false },
-  { id:'glace',           emoji:'🍦', label:'Glace / Dessert',  rc: false },
-  { id:'plat_cuisine',    emoji:'🥡', label:'Plat cuisiné',     rc: false },
-  { id:'plat_maison',     emoji:'🍲', label:'Plat maison',      rc: false },
+  { id:'fruit',           emoji:'🍎', label:'Fruits',           rc:true,  rlab:'Cru',  clab:'Cuit'  },
+  { id:'legume',          emoji:'🥦', label:'Légumes',          rc:true,  rlab:'Cru',  clab:'Cuit'  },
+  { id:'viande',          emoji:'🥩', label:'Viande',           rc:true,  rlab:'Crue', clab:'Cuite' },
+  { id:'viande_hachee',   emoji:'🫕', label:'Viande hachée',    rc:true,  rlab:'Crue', clab:'Cuite' },
+  { id:'poisson_maigre',  emoji:'🐟', label:'Poisson maigre',   rc:true,  rlab:'Cru',  clab:'Cuit'  },
+  { id:'poisson_gras',    emoji:'🐠', label:'Poisson gras',     rc:true,  rlab:'Cru',  clab:'Cuit'  },
+  { id:'produit_laitier', emoji:'🧀', label:'Produit laitier',  rc:false },
+  { id:'glace',           emoji:'🍦', label:'Glace / Dessert',  rc:false },
+  { id:'plat_cuisine',    emoji:'🥡', label:'Plat cuisiné',     rc:false },
+  { id:'plat_maison',     emoji:'🍲', label:'Plat maison',      rc:false },
 ];
 
-// Durées en jours pour un congélateur ★★★★
 const DLC_BASE = {
-  fruit:          { cru:365, cuit:90  },
-  legume:         { cru:365, cuit:90  },
-  viande:         { cru:365, cuit:90  },
-  viande_hachee:  { cru:90,  cuit:90  },
-  poisson_maigre: { cru:180, cuit:90  },
-  poisson_gras:   { cru:90,  cuit:60  },
-  produit_laitier:{ default:90  },
-  glace:          { default:60  },
-  plat_cuisine:   { default:90  },
-  plat_maison:    { default:90  },
+  fruit:{cru:365,cuit:90},legume:{cru:365,cuit:90},viande:{cru:365,cuit:90},
+  viande_hachee:{cru:90,cuit:90},poisson_maigre:{cru:180,cuit:90},poisson_gras:{cru:90,cuit:60},
+  produit_laitier:{default:90},glace:{default:60},plat_cuisine:{default:90},plat_maison:{default:90},
 };
 
 const FREEZERS = [
-  { id:'4etoiles', label:'★★★★ Congélateur 4 étoiles', desc:'-18°C ou moins · Surgélation possible',       maxDays:365, mult:1.00 },
-  { id:'3etoiles', label:'★★★ Congélateur 3 étoiles',  desc:'-18°C · Conservation longue durée',            maxDays:90,  mult:1.00 },
-  { id:'2etoiles', label:'★★ Congélateur 2 étoiles',   desc:'-12°C · Maximum 1 mois',                       maxDays:30,  mult:0.33 },
-  { id:'1etoile',  label:'★ Congélateur 1 étoile',     desc:'-6°C · Maximum 1 semaine',                     maxDays:7,   mult:0.17 },
-  { id:'freezer',  label:'❄️ Compartiment freezer',    desc:'Dans votre réfrigérateur · Maximum 1 semaine', maxDays:7,   mult:0.17 },
+  {id:'4etoiles',label:'★★★★ Congélateur 4 étoiles',desc:'-18°C ou moins · Surgélation possible',maxDays:365,mult:1.00},
+  {id:'3etoiles',label:'★★★ Congélateur 3 étoiles', desc:'-18°C · Conservation longue durée',    maxDays:90, mult:1.00},
+  {id:'2etoiles',label:'★★ Congélateur 2 étoiles',  desc:'-12°C · Maximum 1 mois',               maxDays:30, mult:0.33},
+  {id:'1etoile', label:'★ Congélateur 1 étoile',    desc:'-6°C · Maximum 1 semaine',              maxDays:7,  mult:0.17},
+  {id:'freezer', label:'❄️ Compartiment freezer',   desc:'Dans votre réfrigérateur · Max 1 semaine',maxDays:7,mult:0.17},
 ];
 
-const UNITS = ['portion(s)','g','kg','mL','L','pièce(s)','sachet(s)','boîte(s)','tranche(s)','unité(s)'];
-const SORTS = [
-  { id:'dlc',  label:'📅 Par DLC'   },
-  { id:'name', label:'🔤 Par nom'   },
-  { id:'new',  label:'🕐 Récents'   },
-  { id:'cat',  label:'📦 Catégorie' },
-];
+const UNITS=['portion(s)','g','kg','mL','L','pièce(s)','sachet(s)','boîte(s)','tranche(s)','unité(s)'];
+const SORTS=[{id:'dlc',label:'📅 Par DLC'},{id:'name',label:'🔤 Par nom'},{id:'new',label:'🕐 Récents'},{id:'cat',label:'📦 Catégorie'}];
 
-// ================================================================
-// UTILITIES
-// ================================================================
-
-function calcDLC(category, rawCooked, freezerId, dateAdded) {
-  const base = DLC_BASE[category];
-  if (!base) return null;
-  const fr = FREEZERS.find(f => f.id === freezerId) || FREEZERS[0];
-  let days = base.default !== undefined ? base.default : (base[rawCooked] || base.cru || 90);
-  days = Math.min(Math.round(days * fr.mult), fr.maxDays);
-  const d = new Date(dateAdded + 'T12:00:00');
-  d.setDate(d.getDate() + days);
+function calcDLC(category,rawCooked,freezerId,dateAdded){
+  const base=DLC_BASE[category];if(!base)return null;
+  const fr=FREEZERS.find(f=>f.id===freezerId)||FREEZERS[0];
+  let days=base.default!==undefined?base.default:(base[rawCooked]||base.cru||90);
+  days=Math.min(Math.round(days*fr.mult),fr.maxDays);
+  const d=new Date(dateAdded+'T12:00:00');d.setDate(d.getDate()+days);
   return d.toISOString().split('T')[0];
 }
-
-function daysUntil(dlcStr) {
-  const t = new Date(); t.setHours(0,0,0,0);
-  const d = new Date(dlcStr + 'T00:00:00');
-  return Math.ceil((d - t) / 86400000);
+function daysUntil(s){const t=new Date();t.setHours(0,0,0,0);return Math.ceil((new Date(s+'T00:00:00')-t)/86400000);}
+function dlcStatus(food){
+  if(food.status==='consomme')return'consumed';if(!food.dlc)return'ok';
+  const d=daysUntil(food.dlc);
+  if(d<0)return'expired';if(d<=7)return'critical';if(d<=15)return'warning';if(d<=30)return'soon';return'ok';
 }
+function fmtDate(s){if(!s)return'—';return new Date(s+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});}
+function fmtDays(d){if(d<0)return`Dépassé de ${Math.abs(d)} j`;if(d===0)return"Aujourd'hui!";if(d===1)return'Demain!';if(d<=7)return`J-${d} ⚠️`;if(d<=60)return`${d} j`;if(d<120)return`${Math.round(d/7)} sem.`;return`${Math.round(d/30)} mois`;}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function today(){return new Date().toISOString().split('T')[0];}
 
-function dlcStatus(food) {
-  if (food.status === 'consomme') return 'consumed';
-  if (!food.dlc) return 'ok';
-  const d = daysUntil(food.dlc);
-  if (d < 0) return 'expired';
-  if (d <= 7)  return 'critical';
-  if (d <= 15) return 'warning';
-  if (d <= 30) return 'soon';
-  return 'ok';
-}
-
-function fmtDate(s) {
-  if (!s) return '—';
-  return new Date(s + 'T12:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
-}
-
-function fmtDays(days) {
-  if (days < 0)  return `Dépassé de ${Math.abs(days)} j`;
-  if (days === 0) return "Aujourd'hui !";
-  if (days === 1) return 'Demain !';
-  if (days <= 7)  return `J-${days} ⚠️`;
-  if (days <= 60) return `${days} j`;
-  if (days < 120) return `${Math.round(days/7)} sem.`;
-  return `${Math.round(days/30)} mois`;
-}
-
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
-function today() { return new Date().toISOString().split('T')[0]; }
-
-// ================================================================
-// STORAGE (localStorage + Firebase)
-// ================================================================
-
-let db = null;
-let fbUnsub = null;
-let isRemoteUpdate = false;
-
-function initFB(cfg) {
-  try {
-    if (typeof firebase === 'undefined') return false;
-    if (firebase.apps && firebase.apps.length > 0) {
-      firebase.apps.forEach(a => a.delete().catch(()=>{}));
-    }
-    firebase.initializeApp(cfg);
-    db = firebase.firestore();
+let db=null,fbUnsub=null;
+function initFB(cfg){
+  try{
+    if(typeof firebase==='undefined')return false;
+    if(firebase.apps&&firebase.apps.length>0)firebase.apps.forEach(a=>a.delete().catch(()=>{}));
+    firebase.initializeApp(cfg);db=firebase.firestore();
+    firebase.auth().signInAnonymously().catch(e=>console.error('Auth:',e));
     return true;
-  } catch(e) { console.error('Firebase init:', e); return false; }
+  }catch(e){console.error('Firebase:',e);return false;}
+}
+function ls(key,val){
+  try{
+    if(val===undefined){const v=localStorage.getItem('congelo_'+key);return v?JSON.parse(v):null;}
+    localStorage.setItem('congelo_'+key,JSON.stringify(val));
+  }catch{}
 }
 
-function ls(key, val) {
-  try {
-    if (val === undefined) {
-      const v = localStorage.getItem('ca_' + key);
-      return v ? JSON.parse(v) : null;
-    }
-    localStorage.setItem('ca_' + key, JSON.stringify(val));
-  } catch {}
+async function askNotif(){
+  if(!('Notification'in window))return false;
+  if(Notification.permission==='granted')return true;
+  return(await Notification.requestPermission())==='granted';
 }
-
-// ================================================================
-// NOTIFICATIONS
-// ================================================================
-
-async function askNotif() {
-  if (!('Notification' in window)) return false;
-  if (Notification.permission === 'granted') return true;
-  const p = await Notification.requestPermission();
-  return p === 'granted';
-}
-
-function notifyIfNeeded(foods) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  const lastDate = ls('last_notif');
-  if (lastDate === today()) return;
-  ls('last_notif', today());
-
-  const active = foods.filter(f => f.status !== 'consomme' && f.dlc);
-  const expired  = active.filter(f => daysUntil(f.dlc) < 0);
-  const critical = active.filter(f => { const d=daysUntil(f.dlc); return d>=0 && d<=7; });
-  const warning  = active.filter(f => { const d=daysUntil(f.dlc); return d>7  && d<=15; });
-
-  let delay = 800;
-  [[expired,  '⚫ À jeter',        (n) => `${n} produit(s) périmé(s)`],
-   [critical, '🔴 À consommer vite',(n) => `${n} produit(s) dans moins de 7 jours`],
-   [warning,  '🟡 À planifier',    (n) => `${n} produit(s) à consommer dans 15 jours`],
-  ].forEach(([list, title, body]) => {
-    if (list.length > 0) {
-      setTimeout(() => {
-        new Notification(`❄️ CongélApp — ${title}`, {
-          body: `${body(list.length)} : ${list.map(f=>f.name).join(', ')}`,
-          icon: '/icon-192.png',
-        });
-      }, delay);
-      delay += 1200;
-    }
+function notifyIfNeeded(foods){
+  if(!('Notification'in window)||Notification.permission!=='granted')return;
+  if(ls('last_notif')===today())return;
+  ls('last_notif',today());
+  const act=foods.filter(f=>f.status!=='consomme'&&f.dlc);
+  const expired=act.filter(f=>daysUntil(f.dlc)<0);
+  const critical=act.filter(f=>{const d=daysUntil(f.dlc);return d>=0&&d<=7;});
+  const warning=act.filter(f=>{const d=daysUntil(f.dlc);return d>7&&d<=15;});
+  let delay=800;
+  [[expired,'⚫ À jeter',n=>`${n} produit(s) périmé(s)`],
+   [critical,'🔴 Urgent',n=>`${n} produit(s) à consommer très vite`],
+   [warning,'🟡 À planifier',n=>`${n} produit(s) dans les 15 jours`],
+  ].forEach(([list,title,body])=>{
+    if(list.length>0){setTimeout(()=>new Notification(`❄️ Congelo — ${title}`,{body:`${body(list.length)} : ${list.map(f=>f.name).join(', ')}`,icon:'/icon-192.png'}),delay);delay+=1200;}
   });
 }
 
-// ================================================================
-// ONBOARDING
-// ================================================================
+function Onboarding({onDone,initialJoinId}){
+  const[step,setStep]=useState('user');
+  const[user,setUser]=useState('');
+  const[mode,setMode]=useState(initialJoinId?'join':'');
+  const[joinInput,setJoinInput]=useState(initialJoinId||'');
+  const[freezerType,setFreezerType]=useState('4etoiles');
+  const[showFb,setShowFb]=useState(false);
+  const[fbTxt,setFbTxt]=useState('');
+  const[fbErr,setFbErr]=useState('');
+  const[loading,setLoading]=useState(false);
 
-function Onboarding({ onDone }) {
-  const [step, setStep] = useState('user'); // user | freezer | firebase
-  const [user, setUser] = useState('');
-  const [freezer, setFreezer] = useState('');
-  const [showFb, setShowFb] = useState(false);
-  const [fbTxt, setFbTxt] = useState('');
-  const [fbErr, setFbErr] = useState('');
+  const pickUser=name=>{setUser(name);if(initialJoinId){setMode('join');setStep('firebase');}else setStep('mode');};
+  const parseLink=input=>{try{const url=new URL(input.trim());const id=url.searchParams.get('join');if(id)return id;}catch{}return input.trim();};
 
-  const finish = () => {
-    let fbCfg = null;
-    if (fbTxt.trim()) {
-      try { fbCfg = JSON.parse(fbTxt.trim()); }
-      catch { setFbErr('JSON invalide. Vérifiez le format.'); return; }
+  const finish=async()=>{
+    let fbCfg=null;
+    if(fbTxt.trim()){try{fbCfg=JSON.parse(fbTxt.trim());}catch{setFbErr('JSON invalide. Vérifiez le format.');return;}}
+    const fId=mode==='create'?uid():parseLink(joinInput);
+    let fType=freezerType;
+    if(fbCfg){
+      const ok=initFB(fbCfg);
+      if(ok){
+        setLoading(true);
+        try{
+          if(mode==='create'){
+            await db.collection('freezers').doc(fId).set({createdBy:user,freezerType:fType,createdAt:new Date().toISOString()});
+          }else{
+            const doc=await db.collection('freezers').doc(fId).get();
+            if(doc.exists)fType=doc.data().freezerType||'4etoiles';
+          }
+        }catch(e){console.error(e);}
+        setLoading(false);
+      }
     }
-    onDone({ user, freezer, fbCfg });
+    onDone({user,freezerId:fId,freezerType:fType,fbCfg,isNew:mode==='create'});
   };
 
-  return (
+  return(
     <div className="onboard">
       <div className="ob-logo">❄️</div>
-      <h1 className="ob-title">CongélApp</h1>
+      <h1 className="ob-title">Congelo</h1>
       <p className="ob-sub">Gérez votre congélateur intelligemment</p>
-
       <div className="ob-card">
-        {step === 'user' && <>
+        {loading&&<div style={{textAlign:'center',padding:'20px 0'}}><div style={{fontSize:36}}>⏳</div><p style={{marginTop:8,opacity:.8}}>Configuration en cours…</p></div>}
+        {!loading&&step==='user'&&<>
           <div className="ob-card-title">Qui es-tu ?</div>
-          {[['Romain','👨'],['Manon','👩']].map(([name,ico]) => (
-            <button key={name} className="ob-user-btn" onClick={() => { setUser(name); setStep('freezer'); }}>
+          {[['Romain','👨'],['Manon','👩']].map(([name,ico])=>(
+            <button key={name} className="ob-user-btn" onClick={()=>pickUser(name)}>
               <span style={{fontSize:26}}>{ico}</span><span>{name}</span>
             </button>
           ))}
         </>}
-
-        {step === 'freezer' && <>
+        {!loading&&step==='mode'&&<>
+          <div className="ob-card-title">Votre congélateur</div>
+          <button className="ob-user-btn" onClick={()=>{setMode('create');setStep('freezerType');}}>
+            <span style={{fontSize:26}}>🆕</span>
+            <div><div>Créer un congélateur</div><div className="ob-user-btn-sub">Je suis le premier à configurer l'app</div></div>
+          </button>
+          <button className="ob-user-btn" onClick={()=>{setMode('join');setStep('joinInput');}}>
+            <span style={{fontSize:26}}>🔗</span>
+            <div><div>Rejoindre un congélateur</div><div className="ob-user-btn-sub">J'ai reçu un lien de partage</div></div>
+          </button>
+        </>}
+        {!loading&&step==='joinInput'&&<>
+          <div className="ob-card-title">Colle le lien reçu</div>
+          <input className="ob-fi-plain" placeholder="https://congelo.vercel.app?join=…" value={joinInput} onChange={e=>setJoinInput(e.target.value)}/>
+          {joinInput.trim()&&<button className="ob-continue" onClick={()=>setStep('firebase')}>Continuer →</button>}
+          <button className="ob-skip" onClick={()=>setStep('mode')}>← Retour</button>
+        </>}
+        {!loading&&step==='freezerType'&&<>
           <div className="ob-card-title">Ton appareil de congélation</div>
-          {FREEZERS.map(f => (
-            <div key={f.id} className={`ob-frow ${freezer===f.id?'on':''}`} onClick={() => setFreezer(f.id)}>
-              <div className="ob-frow-txt">
-                <div className="title">{f.label}</div>
-                <div className="sub">{f.desc}</div>
-              </div>
-              {freezer === f.id && <span className="check">✓</span>}
+          {FREEZERS.map(f=>(
+            <div key={f.id} className={`ob-frow ${freezerType===f.id?'on':''}`} onClick={()=>setFreezerType(f.id)}>
+              <div className="ob-frow-txt"><div className="title">{f.label}</div><div className="sub">{f.desc}</div></div>
+              {freezerType===f.id&&<span className="check">✓</span>}
             </div>
           ))}
-          <p className="ob-link">
-            Tu ne sais pas ?{' '}
-            <a href="https://www.google.com/search?q=diff%C3%A9rence+%C3%A9toiles+cong%C3%A9lateur" target="_blank" rel="noopener">
-              Chercher sur Google ↗
-            </a>
-          </p>
-          {freezer && <button className="ob-continue" onClick={() => setStep('firebase')}>Continuer →</button>}
+          <p className="ob-link">Tu ne sais pas ? <a href="https://www.google.com/search?q=diff%C3%A9rence+%C3%A9toiles+cong%C3%A9lateur" target="_blank" rel="noopener">Chercher sur Google ↗</a></p>
+          {freezerType&&<button className="ob-continue" onClick={()=>setStep('firebase')}>Continuer →</button>}
         </>}
-
-        {step === 'firebase' && <>
-          <div className="ob-card-title">🔄 Synchronisation</div>
-          <p style={{fontSize:13,opacity:.75,marginBottom:16}}>
-            Pour partager avec {user === 'Romain' ? 'Manon' : 'Romain'}, collez votre config Firebase (optionnel — gratuit).
-          </p>
-          {!showFb ? <>
-            <button className="ob-continue" onClick={() => setShowFb(true)} style={{marginBottom:9}}>
-              🔥 Configurer Firebase
-            </button>
-            <button className="ob-skip" onClick={finish}>Passer (utiliser en local uniquement)</button>
-          </> : <>
-            <textarea
-              className="ob-fta"
-              placeholder={'{\n  "apiKey": "...",\n  "authDomain": "...",\n  "projectId": "...",\n  ...\n}'}
-              value={fbTxt}
-              onChange={e => { setFbTxt(e.target.value); setFbErr(''); }}
-              rows={7}
-            />
-            {fbErr && <p className="ob-err">{fbErr}</p>}
-            <button className="ob-continue" onClick={finish} style={{marginTop:12}}>✓ Terminer</button>
+        {!loading&&step==='firebase'&&<>
+          <div className="ob-card-title">🔄 Synchronisation Firebase</div>
+          <p style={{fontSize:13,opacity:.75,marginBottom:14}}>{mode==='create'?'Configurez Firebase pour partager le congélateur.':'Entrez la config Firebase pour accéder aux données partagées.'}</p>
+          {!showFb?<>
+            <button className="ob-continue" onClick={()=>setShowFb(true)} style={{marginBottom:9}}>🔥 Entrer la config Firebase</button>
+            <button className="ob-skip" onClick={finish}>Utiliser en local (sans sync)</button>
+          </>:<>
+            <textarea className="ob-fta" rows={6} placeholder={'{\n  "apiKey": "...",\n  "authDomain": "...",\n  "projectId": "...",\n  ...\n}'} value={fbTxt} onChange={e=>{setFbTxt(e.target.value);setFbErr('');}}/>
+            {fbErr&&<p className="ob-err">{fbErr}</p>}
+            <button className="ob-continue" onClick={finish} style={{marginTop:10}}>✓ Terminer</button>
           </>}
         </>}
       </div>
@@ -640,604 +342,398 @@ function Onboarding({ onDone }) {
   );
 }
 
-// ================================================================
-// ADD / EDIT FOOD MODAL
-// ================================================================
-
-function FoodModal({ onSave, onClose, freezerId, editData }) {
-  const [name,       setName]       = useState(editData?.name      || '');
-  const [cat,        setCat]        = useState(editData?.category   || '');
-  const [rc,         setRc]         = useState(editData?.rawCooked  || 'cru');
-  const [qty,        setQty]        = useState(editData?.qty        || '');
-  const [unit,       setUnit]       = useState(editData?.unit       || 'portion(s)');
-  const [dateAdded,  setDateAdded]  = useState(editData?.dateAdded  || today());
-  const [useOvr,     setUseOvr]     = useState(!!editData?.dlcOverride);
-  const [dlcOvr,     setDlcOvr]     = useState(editData?.dlcOverride || '');
-  const [notes,      setNotes]      = useState(editData?.notes      || '');
-  const [photo,      setPhoto]      = useState(editData?.photo      || null);
-  const fileRef = useRef(null);
-
-  const catObj     = CATS.find(c => c.id === cat);
-  const calcDLCVal = cat && dateAdded ? calcDLC(cat, rc, freezerId, dateAdded) : null;
-  const effectDLC  = useOvr && dlcOvr ? dlcOvr : calcDLCVal;
-
-  const handlePhoto = e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const r = new FileReader();
-    r.onload = ev => setPhoto(ev.target.result);
-    r.readAsDataURL(file);
+function ShareModal({freezerId,onClose}){
+  const shareUrl=`${window.location.origin}${window.location.pathname}?join=${freezerId}`;
+  const[copied,setCopied]=useState(false);
+  const copy=()=>{
+    try{navigator.clipboard.writeText(shareUrl);}catch{const el=document.createElement('textarea');el.value=shareUrl;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);}
+    setCopied(true);setTimeout(()=>setCopied(false),2500);
   };
-
-  const save = () => {
-    if (!name.trim() || !cat) return;
-    onSave({
-      id: editData?.id || uid(),
-      name: name.trim(),
-      category: cat,
-      rawCooked: catObj?.rc ? rc : null,
-      qty: qty || null,
-      unit: qty ? unit : null,
-      dateAdded,
-      dlc: effectDLC,
-      dlcOverride: useOvr && dlcOvr ? dlcOvr : null,
-      notes: notes.trim() || null,
-      photo: photo || null,
-      status: editData?.status || 'stock',
-      addedBy: editData?.addedBy || null,
-    });
-  };
-
-  return (
-    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="sheet">
         <div className="sheet-handle"/>
-        <div className="sheet-title">{editData ? '✏️ Modifier' : '➕ Ajouter un aliment'}</div>
+        <div className="sheet-title">🔗 Partager le congélateur</div>
+        <p style={{fontSize:14,color:'var(--text-muted)',marginBottom:14}}>Envoyez ce lien à votre partenaire. Il suffit de l'ouvrir pour rejoindre votre congélateur partagé.</p>
+        <div className="share-url">{shareUrl}</div>
+        <button className="btn btn-primary" onClick={copy}>{copied?'✓ Lien copié !':'📋 Copier le lien'}</button>
+        {navigator.share&&<button className="btn btn-ghost" onClick={()=>navigator.share({title:'Congelo',text:'Rejoins notre congélateur !',url:shareUrl})}>↗ Partager via...</button>}
+        <button className="btn btn-ghost" onClick={onClose}>Fermer</button>
+      </div>
+    </div>
+  );
+}
 
-        <div className="fg">
-          <label className="fl">Nom</label>
-          <input className="fi" placeholder="Ex : Filet de saumon, Soupe maison…" value={name}
-            onChange={e => setName(e.target.value)} autoFocus />
-        </div>
-
-        <div className="fg">
-          <label className="fl">Catégorie</label>
-          <select className="fs-sel" value={cat} onChange={e => setCat(e.target.value)}>
+function FoodModal({onSave,onClose,freezerId,editData}){
+  const[name,setName]=useState(editData?.name||'');
+  const[cat,setCat]=useState(editData?.category||'');
+  const[rc,setRc]=useState(editData?.rawCooked||'cru');
+  const[qty,setQty]=useState(editData?.qty||'');
+  const[unit,setUnit]=useState(editData?.unit||'portion(s)');
+  const[dateAdded,setDateAdded]=useState(editData?.dateAdded||today());
+  const[useOvr,setUseOvr]=useState(!!editData?.dlcOverride);
+  const[dlcOvr,setDlcOvr]=useState(editData?.dlcOverride||'');
+  const[notes,setNotes]=useState(editData?.notes||'');
+  const[photo,setPhoto]=useState(editData?.photo||null);
+  const fileRef=useRef(null);
+  const catObj=CATS.find(c=>c.id===cat);
+  const calcDLCVal=cat&&dateAdded?calcDLC(cat,rc,freezerId,dateAdded):null;
+  const effectDLC=useOvr&&dlcOvr?dlcOvr:calcDLCVal;
+  const handlePhoto=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>setPhoto(ev.target.result);r.readAsDataURL(file);};
+  const save=()=>{
+    if(!name.trim()||!cat)return;
+    onSave({id:editData?.id||uid(),name:name.trim(),category:cat,rawCooked:catObj?.rc?rc:null,qty:qty||null,unit:qty?unit:null,dateAdded,dlc:effectDLC,dlcOverride:useOvr&&dlcOvr?dlcOvr:null,notes:notes.trim()||null,photo:photo||null,status:editData?.status||'stock',addedBy:editData?.addedBy||null});
+  };
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="sheet">
+        <div className="sheet-handle"/>
+        <div className="sheet-title">{editData?'✏️ Modifier':'➕ Ajouter un aliment'}</div>
+        <div className="fg"><label className="fl">Nom</label><input className="fi" placeholder="Ex : Filet de saumon, Soupe maison…" value={name} onChange={e=>setName(e.target.value)} autoFocus/></div>
+        <div className="fg"><label className="fl">Catégorie</label>
+          <select className="fs-sel" value={cat} onChange={e=>setCat(e.target.value)}>
             <option value="">— Choisir —</option>
-            {CATS.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
-          </select>
-        </div>
-
-        {catObj?.rc && (
-          <div className="fg">
-            <label className="fl">{catObj.rlab} ou {catObj.clab} ?</label>
-            <div className="toggle-group">
-              <button className={`tg-btn ${rc==='cru'?'on':''}`}  onClick={() => setRc('cru')}>🥩 {catObj.rlab}</button>
-              <button className={`tg-btn ${rc==='cuit'?'on':''}`} onClick={() => setRc('cuit')}>🍳 {catObj.clab}</button>
-            </div>
-          </div>
-        )}
-
+            {CATS.map(c=><option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
+          </select></div>
+        {catObj?.rc&&<div className="fg"><label className="fl">{catObj.rlab} ou {catObj.clab} ?</label>
+          <div className="toggle-group">
+            <button className={`tg-btn ${rc==='cru'?'on':''}`} onClick={()=>setRc('cru')}>🥩 {catObj.rlab}</button>
+            <button className={`tg-btn ${rc==='cuit'?'on':''}`} onClick={()=>setRc('cuit')}>🍳 {catObj.clab}</button>
+          </div></div>}
+        <div className="fg"><label className="fl">Quantité (optionnel)</label>
+          <div className="qty-row"><input className="fi" type="number" placeholder="Ex : 500" value={qty} onChange={e=>setQty(e.target.value)}/><select className="fs-sel" value={unit} onChange={e=>setUnit(e.target.value)}>{UNITS.map(u=><option key={u} value={u}>{u}</option>)}</select></div></div>
+        <div className="fg"><label className="fl">Date de mise au congélateur</label><input className="fi" type="date" value={dateAdded} onChange={e=>setDateAdded(e.target.value)}/></div>
+        {calcDLCVal&&<div className="dlc-preview">📅 DLC calculée : <strong>{fmtDate(calcDLCVal)}</strong> · {daysUntil(calcDLCVal)} jours</div>}
         <div className="fg">
-          <label className="fl">Quantité (optionnel)</label>
-          <div className="qty-row">
-            <input className="fi" type="number" placeholder="Ex : 500" value={qty} onChange={e => setQty(e.target.value)} />
-            <select className="fs-sel" value={unit} onChange={e => setUnit(e.target.value)}>
-              {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-            </select>
-          </div>
+          <label className="override-row"><input type="checkbox" checked={useOvr} onChange={e=>setUseOvr(e.target.checked)}/> Utiliser la DLC imprimée sur l'emballage</label>
+          {useOvr&&<input className="fi" type="date" value={dlcOvr} onChange={e=>setDlcOvr(e.target.value)} style={{marginTop:7}}/>}
         </div>
-
-        <div className="fg">
-          <label className="fl">Date de mise au congélateur</label>
-          <input className="fi" type="date" value={dateAdded} onChange={e => setDateAdded(e.target.value)} />
-        </div>
-
-        {calcDLCVal && (
-          <div className="dlc-preview">
-            📅 DLC calculée : <strong>{fmtDate(calcDLCVal)}</strong>
-            &nbsp;·&nbsp;{daysUntil(calcDLCVal)} jours
-          </div>
-        )}
-
-        <div className="fg">
-          <label className="override-row">
-            <input type="checkbox" checked={useOvr} onChange={e => setUseOvr(e.target.checked)} />
-            Utiliser la DLC imprimée sur l'emballage
-          </label>
-          {useOvr && (
-            <input className="fi" type="date" value={dlcOvr}
-              onChange={e => setDlcOvr(e.target.value)} style={{marginTop:7}} />
-          )}
-        </div>
-
-        <div className="fg">
-          <label className="fl">Photo (optionnel)</label>
-          {photo
-            ? <div style={{position:'relative'}}>
-                <img src={photo} alt="aperçu" className="photo-thumb"/>
-                <button onClick={() => setPhoto(null)}
-                  style={{position:'absolute',top:8,right:8,background:'rgba(0,0,0,.5)',color:'white',
-                    border:'none',borderRadius:8,padding:'4px 9px',cursor:'pointer',fontSize:12}}>
-                  ✕
-                </button>
-              </div>
-            : <div className="photo-zone" onClick={() => fileRef.current?.click()}>
-                <div style={{fontSize:32,marginBottom:7}}>📷</div>
-                <div style={{fontSize:14}}>Prendre une photo ou importer</div>
-                <div style={{fontSize:12,marginTop:4,opacity:.6}}>Pratique pour identifier les tupperware mystères 😄</div>
-              </div>
-          }
-          <input ref={fileRef} type="file" accept="image/*" capture="environment"
-            style={{display:'none'}} onChange={handlePhoto} />
-        </div>
-
-        <div className="fg">
-          <label className="fl">Notes</label>
-          <textarea className="fta" rows={2} placeholder="Informations complémentaires…"
-            value={notes} onChange={e => setNotes(e.target.value)} />
-        </div>
-
-        <button className="btn btn-primary" onClick={save} disabled={!name.trim() || !cat}>
-          {editData ? '✓ Enregistrer les modifications' : '➕ Ajouter au congélateur'}
-        </button>
+        <div className="fg"><label className="fl">Photo (optionnel)</label>
+          {photo?<div style={{position:'relative'}}><img src={photo} alt="aperçu" className="photo-thumb"/><button onClick={()=>setPhoto(null)} style={{position:'absolute',top:8,right:8,background:'rgba(0,0,0,.5)',color:'white',border:'none',borderRadius:8,padding:'4px 9px',cursor:'pointer',fontSize:12}}>✕</button></div>
+          :<div className="photo-zone" onClick={()=>fileRef.current?.click()}><div style={{fontSize:32,marginBottom:7}}>📷</div><div style={{fontSize:14}}>Prendre une photo ou importer</div><div style={{fontSize:12,marginTop:4,opacity:.6}}>Pratique pour les tupperware mystères 😄</div></div>}
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handlePhoto}/></div>
+        <div className="fg"><label className="fl">Notes</label><textarea className="fta" rows={2} placeholder="Informations complémentaires…" value={notes} onChange={e=>setNotes(e.target.value)}/></div>
+        <button className="btn btn-primary" onClick={save} disabled={!name.trim()||!cat}>{editData?'✓ Enregistrer':'➕ Ajouter au congélateur'}</button>
         <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
       </div>
     </div>
   );
 }
 
-// ================================================================
-// FOOD CARD
-// ================================================================
-
-function FoodCard({ food, onEdit, onDelete, onStatus }) {
-  const [open, setOpen] = useState(false);
-  const st   = dlcStatus(food);
-  const cat  = CATS.find(c => c.id === food.category);
-  const days = food.dlc ? daysUntil(food.dlc) : null;
-
-  const borderColors = {
-    ok:'#a7f3d0', soon:'#fde047', warning:'#fdba74',
-    critical:'#fca5a5', expired:'#cbd5e1', consumed:'#e5e7eb',
-  };
-  const bgColors = {
-    ok:'#fff', soon:'#fffef0', warning:'#fff8f2',
-    critical:'#fff5f5', expired:'#f8fafc', consumed:'#fafafa',
-  };
-  const dayClass = { ok:'dlc-ok', soon:'dlc-soon', warning:'dlc-warning', critical:'dlc-critical', expired:'dlc-expired', consumed:'dlc-expired' };
-
-  return (
-    <div className={`food-card ${st} slide-up`}
-      style={{borderColor: borderColors[st]||'#a7f3d0', background: bgColors[st]||'#fff'}}
-      onClick={() => setOpen(!open)}>
-
+function FoodCard({food,onEdit,onDelete,onStatus}){
+  const[open,setOpen]=useState(false);
+  const st=dlcStatus(food);
+  const cat=CATS.find(c=>c.id===food.category);
+  const days=food.dlc?daysUntil(food.dlc):null;
+  const bc={ok:'#a7f3d0',soon:'#fde047',warning:'#fdba74',critical:'#fca5a5',expired:'#cbd5e1',consumed:'#e5e7eb'};
+  const bg={ok:'#fff',soon:'#fffef0',warning:'#fff8f2',critical:'#fff5f5',expired:'#f8fafc',consumed:'#fafafa'};
+  const dc={ok:'dlc-ok',soon:'dlc-soon',warning:'dlc-warning',critical:'dlc-critical',expired:'dlc-expired',consumed:'dlc-expired'};
+  return(
+    <div className={`food-card ${st} slide-up`} style={{borderColor:bc[st]||'#a7f3d0',background:bg[st]||'#fff'}} onClick={()=>setOpen(!open)}>
       <div className="card-top">
         <div className="card-main">
-          <div className="food-name">
-            {cat?.emoji} {food.name}
-            {food.status === 'decongele' && <span style={{marginLeft:6,fontSize:13}}>⏰</span>}
-          </div>
+          <div className="food-name">{cat?.emoji} {food.name}{food.status==='decongele'&&<span style={{marginLeft:6,fontSize:13}}>⏰</span>}</div>
           <div className="food-badges">
             <span className="badge b-cat">{cat?.label}</span>
-            {food.rawCooked === 'cru'  && <span className="badge b-raw">Cru</span>}
-            {food.rawCooked === 'cuit' && <span className="badge b-cook">Cuit</span>}
-            {food.qty  && <span className="badge b-qty">{food.qty} {food.unit}</span>}
-            {food.addedBy && <span className="badge b-who">👤 {food.addedBy}</span>}
-            {food.status === 'decongele' && <span className="badge b-decon">⏰ Décongelé</span>}
+            {food.rawCooked==='cru'&&<span className="badge b-raw">Cru</span>}
+            {food.rawCooked==='cuit'&&<span className="badge b-cook">Cuit</span>}
+            {food.qty&&<span className="badge b-qty">{food.qty} {food.unit}</span>}
+            {food.addedBy&&<span className="badge b-who">👤 {food.addedBy}</span>}
+            {food.status==='decongele'&&<span className="badge b-decon">⏰ Décongelé</span>}
           </div>
         </div>
-        {food.photo && <img src={food.photo} alt={food.name} className="card-photo"/>}
+        {food.photo&&<img src={food.photo} alt={food.name} className="card-photo"/>}
       </div>
-
-      {food.dlc && (
-        <div className="food-dlc">
-          <span className="dlc-date">📅 {fmtDate(food.dlc)}</span>
-          {days !== null && (
-            <span className={`dlc-badge ${dayClass[st]}`}>{fmtDays(days)}</span>
-          )}
+      {food.dlc&&<div className="food-dlc"><span className="dlc-date">📅 {fmtDate(food.dlc)}</span>{days!==null&&<span className={`dlc-badge ${dc[st]}`}>{fmtDays(days)}</span>}</div>}
+      {open&&<div className="card-detail" onClick={e=>e.stopPropagation()}>
+        {food.notes&&<p className="card-note">📝 {food.notes}</p>}
+        <p className="card-added">Congelé le {fmtDate(food.dateAdded)}</p>
+        <div className="card-actions">
+          <button className="ca-btn ca-edit" onClick={()=>onEdit(food)}>✏️ Modifier</button>
+          {food.status==='stock'&&<button className="ca-btn ca-decon" onClick={()=>onStatus(food.id,'decongele')}>❄️→🌡️ Décongelé</button>}
+          {food.status==='decongele'&&<button className="ca-btn ca-ok" onClick={()=>onStatus(food.id,'consomme')}>✓ Consommé</button>}
+          {food.status!=='stock'&&<button className="ca-btn ca-back" onClick={()=>onStatus(food.id,'stock')}>↩️ Remettre</button>}
+          <button className="ca-btn ca-del" onClick={()=>window.confirm(`Supprimer "${food.name}" ?`)&&onDelete(food.id)}>🗑️</button>
         </div>
-      )}
-
-      {open && (
-        <div className="card-detail" onClick={e => e.stopPropagation()}>
-          {food.notes && <p className="card-note">📝 {food.notes}</p>}
-          <p className="card-added">Congelé le {fmtDate(food.dateAdded)}</p>
-          <div className="card-actions">
-            <button className="ca-btn ca-edit" onClick={() => onEdit(food)}>✏️ Modifier</button>
-            {food.status === 'stock' && (
-              <button className="ca-btn ca-decon" onClick={() => onStatus(food.id,'decongele')}>
-                ❄️→🌡️ Décongelé
-              </button>
-            )}
-            {food.status === 'decongele' && (
-              <button className="ca-btn ca-ok" onClick={() => onStatus(food.id,'consomme')}>✓ Consommé</button>
-            )}
-            {food.status !== 'stock' && (
-              <button className="ca-btn ca-back" onClick={() => onStatus(food.id,'stock')}>↩️ Remettre</button>
-            )}
-            <button className="ca-btn ca-del"
-              onClick={() => window.confirm(`Supprimer "${food.name}" ?`) && onDelete(food.id)}>
-              🗑️
-            </button>
-          </div>
-        </div>
-      )}
+      </div>}
     </div>
   );
 }
 
-// ================================================================
-// SETTINGS
-// ================================================================
+async function analyzePhotoWithAI(base64Image,mediaType,apiKey){
+  const prompt=`Tu es un assistant pour un gestionnaire de congélateur. Analyse cette photo et identifie tous les aliments visibles.
+Retourne UNIQUEMENT un tableau JSON valide (sans markdown) :
+[{"name":"nom en français","category":"fruit|legume|viande|viande_hachee|poisson_maigre|poisson_gras|produit_laitier|glace|plat_cuisine|plat_maison","rawCooked":"cru ou cuit ou null","qty":nombre_ou_null,"unit":"g|kg|portion(s)|pièce(s)|null","dlcOverride":"YYYY-MM-DD ou null","notes":"info ou null"}]
+Si aucun aliment identifiable, retourne [].`;
+  const response=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-opus-4-5',max_tokens:1024,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mediaType,data:base64Image}},{type:'text',text:prompt}]}]})
+  });
+  if(!response.ok)throw new Error(`API error ${response.status}`);
+  const data=await response.json();
+  const text=data.content?.[0]?.text||'[]';
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
 
-function Settings({ settings, onUpdate, onClose, fbReady }) {
-  const [freezer, setFreezer]   = useState(settings.freezer);
-  const [showFb,  setShowFb]    = useState(false);
-  const [fbTxt,   setFbTxt]     = useState(settings.fbCfg ? JSON.stringify(settings.fbCfg, null, 2) : '');
-  const [notifPerm, setNotifPerm] = useState(typeof Notification!=='undefined' ? Notification.permission : 'unsupported');
-
-  const save = () => {
-    let fbCfg = settings.fbCfg;
-    if (fbTxt.trim()) { try { fbCfg = JSON.parse(fbTxt.trim()); } catch {} }
-    onUpdate({ ...settings, freezer, fbCfg });
-    onClose();
+function AIImportModal({onAdd,onClose,freezerId,apiKey,currentUser}){
+  const[phase,setPhase]=useState('pick');
+  const[photo,setPhoto]=useState(null);
+  const[photoB64,setPhotoB64]=useState(null);
+  const[mediaType,setMediaType]=useState('image/jpeg');
+  const[results,setResults]=useState([]);
+  const[selected,setSelected]=useState([]);
+  const[errorMsg,setErrorMsg]=useState('');
+  const fileRef=useRef(null);
+  const handlePhoto=e=>{const file=e.target.files[0];if(!file)return;setMediaType(file.type||'image/jpeg');const r=new FileReader();r.onload=ev=>{setPhoto(ev.target.result);setPhotoB64(ev.target.result.split(',')[1]);};r.readAsDataURL(file);};
+  const analyze=async()=>{
+    if(!apiKey){setErrorMsg('Clé API Anthropic manquante — ajoutez-la dans ⚙️ Paramètres.');setPhase('error');return;}
+    setPhase('loading');
+    try{const items=await analyzePhotoWithAI(photoB64,mediaType,apiKey);if(!items.length){setErrorMsg('Aucun aliment détecté. Essayez une autre photo.');setPhase('error');return;}setResults(items);setSelected(items.map((_,i)=>i));setPhase('results');}
+    catch(e){setErrorMsg(`Erreur : ${e.message}`);setPhase('error');}
   };
-
-  const enableNotif = async () => {
-    const ok = await askNotif();
-    setNotifPerm(ok ? 'granted' : 'denied');
+  const toggleItem=i=>setSelected(p=>p.includes(i)?p.filter(x=>x!==i):[...p,i]);
+  const confirmAdd=()=>{
+    selected.forEach(i=>{const item=results[i];const cat=CATS.find(c=>c.id===item.category);
+      onAdd({id:uid(),name:item.name,category:item.category||'plat_maison',rawCooked:cat?.rc?(item.rawCooked==='cuit'?'cuit':'cru'):null,qty:item.qty||null,unit:item.qty?(item.unit||'portion(s)'):null,dateAdded:today(),dlc:item.dlcOverride||calcDLC(item.category||'plat_maison',item.rawCooked||'cru',freezerId,today()),dlcOverride:item.dlcOverride||null,notes:item.notes||null,photo:null,status:'stock',addedBy:currentUser});
+    });onClose();
   };
-
-  return (
-    <div className="fullscreen">
-      <div className="fs-header">
-        <button className="back-btn" onClick={onClose}>←</button>
-        <span className="fs-title">⚙️ Paramètres</span>
-      </div>
-      <div className="fs-body">
-
-        <div style={{marginBottom:22}}>
-          <div className="sec-title">Appareil de congélation</div>
-          {FREEZERS.map(f => (
-            <div key={f.id} className={`srow ${freezer===f.id?'active':''}`} onClick={() => setFreezer(f.id)}>
-              <div>
-                <div className="srow-label">{f.label}</div>
-                <div className="srow-sub">{f.desc}</div>
-              </div>
-              {freezer === f.id && <span className="srow-check">✓</span>}
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="sheet">
+        <div className="sheet-handle"/>
+        <div className="sheet-title">🤖 Importer par photo IA</div>
+        {phase==='pick'&&<>
+          {photo?<img src={photo} alt="aperçu" className="ai-photo-preview"/>
+          :<div className="photo-zone" onClick={()=>fileRef.current?.click()} style={{marginBottom:16}}><div style={{fontSize:40,marginBottom:8}}>📷</div><div style={{fontSize:15,fontWeight:600}}>Photographier les aliments</div><div style={{fontSize:13,marginTop:5,opacity:.65}}>Emballages, tupperware…</div></div>}
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handlePhoto}/>
+          {photo&&<><button className="btn btn-primary" onClick={analyze}>🔍 Analyser avec Claude</button><button className="btn btn-ghost" onClick={()=>{setPhoto(null);setPhotoB64(null);}}>Changer de photo</button></>}
+          {!photo&&<button className="btn btn-ghost" onClick={onClose}>Annuler</button>}
+        </>}
+        {phase==='loading'&&<div className="ai-loading"><div className="ai-loading-spinner">❄️</div><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Analyse en cours…</div><div style={{fontSize:13}}>Claude identifie les aliments</div></div>}
+        {phase==='results'&&<>
+          <p style={{fontSize:13,color:'var(--text-muted)',marginBottom:12}}>{results.length} aliment{results.length>1?'s':''} détecté{results.length>1?'s':''}. Sélectionnez ceux à ajouter :</p>
+          {results.map((item,i)=>(
+            <div key={i} className={`ai-result-item ${selected.includes(i)?'selected':''}`} onClick={()=>toggleItem(i)}>
+              <div className="ai-result-check">{selected.includes(i)?'✓':''}</div>
+              <div style={{flex:1}}><div className="ai-result-name">{CATS.find(c=>c.id===item.category)?.emoji} {item.name}</div><div className="ai-result-meta">{CATS.find(c=>c.id===item.category)?.label}{item.rawCooked&&item.rawCooked!=='null'?` · ${item.rawCooked}`:''}{item.qty?` · ${item.qty} ${item.unit||''}`:''}</div></div>
             </div>
           ))}
-          <a href="https://www.google.com/search?q=quelle+diff%C3%A9rence+%C3%A9toiles+cong%C3%A9lateur"
-            target="_blank" rel="noopener"
-            style={{display:'block',fontSize:13,color:'#2563eb',marginTop:7,textDecoration:'none'}}>
-            🔍 Comprendre les étoiles de congélateur →
-          </a>
-        </div>
+          <div style={{display:'flex',gap:8,marginTop:4}}><button className="btn btn-ghost" style={{flex:1,marginTop:0}} onClick={()=>setSelected(results.map((_,i)=>i))}>Tout ✓</button><button className="btn btn-ghost" style={{flex:1,marginTop:0}} onClick={()=>setSelected([])}>Tout ○</button></div>
+          <button className="btn btn-primary" style={{marginTop:12}} disabled={!selected.length} onClick={confirmAdd}>➕ Ajouter {selected.length} aliment{selected.length>1?'s':''}</button>
+          <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
+        </>}
+        {phase==='error'&&<><div style={{background:'#fee2e2',border:'1px solid #fca5a5',borderRadius:12,padding:14,marginBottom:16,color:'#7f1d1d',fontSize:14}}>⚠️ {errorMsg}</div><button className="btn btn-primary" onClick={()=>setPhase('pick')}>Réessayer</button><button className="btn btn-ghost" onClick={onClose}>Fermer</button></>}
+      </div>
+    </div>
+  );
+}
 
+function Settings({settings,fbCfg,fbReady,onUpdate,onClose}){
+  const[freezer,setFreezer]=useState(settings.freezerType);
+  const[anthropic,setAnthropic]=useState(settings.anthropicKey||'');
+  const[showFb,setShowFb]=useState(false);
+  const[fbTxt,setFbTxt]=useState(fbCfg?JSON.stringify(fbCfg,null,2):'');
+  const[notifPerm,setNotifPerm]=useState(typeof Notification!=='undefined'?Notification.permission:'unsupported');
+  const save=()=>{
+    let newFbCfg=fbCfg;
+    if(fbTxt.trim()){try{newFbCfg=JSON.parse(fbTxt.trim());}catch{}}
+    onUpdate({...settings,freezerType:freezer,anthropicKey:anthropic},newFbCfg);
+    onClose();
+  };
+  const enableNotif=async()=>{const ok=await askNotif();setNotifPerm(ok?'granted':'denied');};
+  return(
+    <div className="fullscreen">
+      <div className="fs-header"><button className="back-btn" onClick={onClose}>←</button><span className="fs-title">⚙️ Paramètres</span></div>
+      <div className="fs-body">
+        <div style={{marginBottom:22}}>
+          <div className="sec-title">Appareil de congélation</div>
+          {FREEZERS.map(f=>(
+            <div key={f.id} className={`srow ${freezer===f.id?'active':''}`} onClick={()=>setFreezer(f.id)}>
+              <div><div className="srow-label">{f.label}</div><div className="srow-sub">{f.desc}</div></div>
+              {freezer===f.id&&<span className="srow-check">✓</span>}
+            </div>
+          ))}
+          <a href="https://www.google.com/search?q=quelle+diff%C3%A9rence+%C3%A9toiles+cong%C3%A9lateur" target="_blank" rel="noopener" style={{display:'block',fontSize:13,color:'#2563eb',marginTop:7,textDecoration:'none'}}>🔍 Comprendre les étoiles →</a>
+        </div>
         <div style={{marginBottom:22}}>
           <div className="sec-title">Notifications</div>
-          {notifPerm === 'granted' && (
-            <div className="status-pill ok">✓ Notifications activées</div>
-          )}
-          {notifPerm === 'denied' && (
-            <div className="status-pill err">✕ Bloquées — autorisez-les dans les paramètres du navigateur</div>
-          )}
-          {notifPerm === 'default' && (
-            <button className="srow" onClick={enableNotif}>
-              <span className="srow-label">🔔 Activer les notifications</span>
-            </button>
-          )}
-          {notifPerm === 'unsupported' && (
-            <div className="status-pill warn">⚠️ Non supportées sur ce navigateur</div>
-          )}
-          <p style={{fontSize:12,color:'#94a3b8',marginTop:6}}>
-            Alerte 15 jours avant la DLC, rappel à 7 jours et au dépassement.
-          </p>
+          {notifPerm==='granted'&&<div className="status-pill ok">✓ Notifications activées</div>}
+          {notifPerm==='denied'&&<div className="status-pill err">✕ Bloquées — autorisez dans les paramètres du navigateur</div>}
+          {notifPerm==='default'&&<div className="srow" onClick={enableNotif}><span className="srow-label">🔔 Activer les notifications</span></div>}
+          {notifPerm==='unsupported'&&<div className="status-pill warn">⚠️ Non supportées sur ce navigateur</div>}
         </div>
-
+        <div style={{marginBottom:22}}>
+          <div className="sec-title">Import IA — Clé Anthropic</div>
+          <div className="fg"><input className="fi" type="password" placeholder="sk-ant-…" value={anthropic} onChange={e=>setAnthropic(e.target.value)}/></div>
+          <p style={{fontSize:12,color:'#94a3b8'}}>Nécessaire pour le bouton 🤖 · <a href="https://console.anthropic.com" target="_blank" rel="noopener" style={{color:'#2563eb'}}>console.anthropic.com</a></p>
+        </div>
         <div style={{marginBottom:22}}>
           <div className="sec-title">Synchronisation Firebase</div>
-          <div className={`status-pill ${fbReady?'ok':'warn'}`}>
-            {fbReady ? '🔥 Firebase connecté — sync temps réel active' : '💾 Mode local — données sur cet appareil uniquement'}
-          </div>
-          <div className="srow" onClick={() => setShowFb(!showFb)}>
-            <span className="srow-label">🔥 {settings.fbCfg ? 'Modifier la config Firebase' : 'Configurer Firebase'}</span>
-            <span style={{color:'#94a3b8'}}>{showFb ? '▲' : '▼'}</span>
-          </div>
-          {showFb && (
-            <div className="fg" style={{marginTop:8}}>
-              <textarea className="fta" rows={8} style={{fontFamily:'monospace',fontSize:12}}
-                placeholder={'Collez votre config Firebase ici :\n{\n  "apiKey": "...",\n  "authDomain": "...",\n  "projectId": "...",\n  ...\n}'}
-                value={fbTxt}
-                onChange={e => setFbTxt(e.target.value)}
-              />
-              <p style={{fontSize:12,color:'#64748b',marginTop:5}}>
-                Console Firebase → Paramètres du projet → Vos applications → Config SDK
-              </p>
-            </div>
-          )}
+          <div className={`status-pill ${fbReady?'ok':'warn'}`}>{fbReady?'🔥 Firebase connecté — sync temps réel':'💾 Mode local — données sur cet appareil uniquement'}</div>
+          <div className="srow" onClick={()=>setShowFb(!showFb)}><span className="srow-label">🔥 {fbCfg?'Modifier la config Firebase':'Configurer Firebase'}</span><span style={{color:'#94a3b8'}}>{showFb?'▲':'▼'}</span></div>
+          {showFb&&<div className="fg" style={{marginTop:8}}><textarea className="fta" rows={7} style={{fontFamily:'monospace',fontSize:12}} placeholder={'{\n  "apiKey": "...",\n  ...\n}'} value={fbTxt} onChange={e=>setFbTxt(e.target.value)}/></div>}
         </div>
-
         <button className="btn btn-primary" onClick={save}>✓ Enregistrer</button>
       </div>
     </div>
   );
 }
 
-// ================================================================
-// APP ROOT
-// ================================================================
+function App(){
+  const joinIdFromUrl=useMemo(()=>new URLSearchParams(window.location.search).get('join'),[]);
+  const[ready,setReady]=useState(false);
+  const[curUser,setCurUser]=useState('');
+  const[freezerId,setFreezerId]=useState('');
+  const[settings,setSettings]=useState({freezerType:'4etoiles',anthropicKey:''});
+  const[fbCfgState,setFbCfgState]=useState(null);
+  const[foods,setFoods]=useState([]);
+  const[fbReady,setFbReady]=useState(false);
+  const[showAdd,setShowAdd]=useState(false);
+  const[editFood,setEditFood]=useState(null);
+  const[showSettings,setShowSettings]=useState(false);
+  const[showAI,setShowAI]=useState(false);
+  const[showShare,setShowShare]=useState(false);
+  const[search,setSearch]=useState('');
+  const[activeCats,setActiveCats]=useState([]);
+  const[sortBy,setSortBy]=useState('dlc');
+  const[showConsumed,setShowConsumed]=useState(false);
+  const freezerIdRef=useRef('');
 
-function App() {
-  const [ready,    setReady]    = useState(false);
-  const [curUser,  setCurUser]  = useState('');
-  const [settings, setSettings] = useState({ freezer:'4etoiles', fbCfg:null });
-  const [foods,    setFoods]    = useState([]);
-  const [fbReady,  setFbReady]  = useState(false);
-
-  const [showAdd,      setShowAdd]      = useState(false);
-  const [editFood,     setEditFood]     = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
-  const [search,       setSearch]       = useState('');
-  const [activeCats,   setActiveCats]   = useState([]);
-  const [sortBy,       setSortBy]       = useState('dlc');
-  const [showConsumed, setShowConsumed] = useState(false);
-
-  // ── MOUNT ──────────────────────────────────────────────────────
-  useEffect(() => {
-    const savedUser = ls('user');
-    const savedSett = ls('settings');
-    const savedFood = ls('foods') || [];
-    if (savedUser && savedSett) {
-      setCurUser(savedUser);
-      setSettings(savedSett);
-      setFoods(savedFood);
-      setReady(true);
-      if (savedSett.fbCfg) {
-        const ok = initFB(savedSett.fbCfg);
-        setFbReady(ok);
-        if (ok) startSync();
-      }
-      setTimeout(() => notifyIfNeeded(savedFood), 1200);
+  useEffect(()=>{
+    const savedUser=ls('user');
+    const savedFid=ls('freezer_id');
+    const savedSett=ls('settings');
+    const savedFbCfg=ls('fb_cfg');
+    if(savedUser&&savedFid&&savedSett){
+      setCurUser(savedUser);setFreezerId(savedFid);freezerIdRef.current=savedFid;
+      setSettings(savedSett);setFbCfgState(savedFbCfg);setReady(true);
+      if(savedFbCfg){const ok=initFB(savedFbCfg);setFbReady(ok);if(ok)startSync(savedFid);else setFoods(ls('foods_cache')||[]);}
+      else setFoods(ls('foods_cache')||[]);
+      setTimeout(()=>notifyIfNeeded(ls('foods_cache')||[]),1200);
     }
-  }, []);
+  },[]);
 
-  // ── FIRESTORE SYNC ─────────────────────────────────────────────
-  function startSync() {
-    if (!db) return;
-    if (fbUnsub) fbUnsub();
-    fbUnsub = db.collection('foods').onSnapshot(snap => {
-      const remote = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-      isRemoteUpdate = true;
-      setFoods(remote);
-      ls('foods', remote);
-      isRemoteUpdate = false;
-    }, err => { console.error('Firestore:', err); setFbReady(false); });
+  function startSync(fid){
+    if(!db||!fid)return;
+    if(fbUnsub)fbUnsub();
+    fbUnsub=db.collection('freezers').doc(fid).collection('foods')
+      .onSnapshot(snap=>{
+        const remote=snap.docs.map(d=>({id:d.id,...d.data()}));
+        setFoods(remote);ls('foods_cache',remote);
+      },err=>{console.error('Firestore:',err);setFbReady(false);});
   }
 
-  // ── MUTATIONS ──────────────────────────────────────────────────
-  const mutateFoods = (next) => {
-    setFoods(next);
-    ls('foods', next);
-    if (db) {
-      const batch = db.batch();
-      next.forEach(f => {
-        // strip photo from firestore (too large)
-        const { photo, ...rest } = f;
-        batch.set(db.collection('foods').doc(f.id), rest);
-      });
-      batch.commit().catch(console.error);
-    }
-  };
+  const foodsCol=()=>db&&freezerIdRef.current?db.collection('freezers').doc(freezerIdRef.current).collection('foods'):null;
 
-  const deleteFromDB = (id) => {
-    if (db) db.collection('foods').doc(id).delete().catch(console.error);
-  };
-
-  // ── HANDLERS ──────────────────────────────────────────────────
-  const onboard = ({ user, freezer, fbCfg }) => {
-    const sett = { freezer, fbCfg };
-    setCurUser(user); setSettings(sett); setReady(true);
-    ls('user', user); ls('settings', sett);
-    if (fbCfg) {
-      const ok = initFB(fbCfg);
-      setFbReady(ok);
-      if (ok) startSync();
-    }
+  const onboard=({user,freezerId:fid,freezerType,fbCfg,isNew})=>{
+    const sett={freezerType,anthropicKey:''};
+    setCurUser(user);setFreezerId(fid);freezerIdRef.current=fid;
+    setSettings(sett);setFbCfgState(fbCfg);setReady(true);
+    ls('user',user);ls('freezer_id',fid);ls('settings',sett);ls('fb_cfg',fbCfg);
+    if(fbCfg){const ok=initFB(fbCfg);setFbReady(ok);if(ok)startSync(fid);}
     askNotif();
+    if(isNew)setTimeout(()=>setShowShare(true),700);
   };
 
-  const updateSettings = (newSett) => {
-    setSettings(newSett);
-    ls('settings', newSett);
-    if (newSett.fbCfg && newSett.fbCfg !== settings.fbCfg) {
-      const ok = initFB(newSett.fbCfg);
-      setFbReady(ok);
-      if (ok) startSync();
-    }
-    // Recalculate DLCs if freezer changed and no manual override
-    if (newSett.freezer !== settings.freezer) {
-      const recalc = foods.map(f => f.dlcOverride ? f : {
-        ...f,
-        dlc: calcDLC(f.category, f.rawCooked, newSett.freezer, f.dateAdded)
-      });
-      mutateFoods(recalc);
-    }
+  const updateSettings=(newSett,newFbCfg)=>{
+    setSettings(newSett);ls('settings',newSett);
+    if(newFbCfg!==undefined){setFbCfgState(newFbCfg);ls('fb_cfg',newFbCfg);if(newFbCfg){const ok=initFB(newFbCfg);setFbReady(ok);if(ok)startSync(freezerIdRef.current);}}
+    if(newSett.freezerType!==settings.freezerType&&db&&freezerIdRef.current)
+      db.collection('freezers').doc(freezerIdRef.current).update({freezerType:newSett.freezerType}).catch(console.error);
   };
 
-  const saveFood = (food) => {
-    food.addedBy = food.addedBy || curUser;
-    const next = editFood
-      ? foods.map(f => f.id === food.id ? food : f)
-      : [food, ...foods];
-    mutateFoods(next);
-    setShowAdd(false); setEditFood(null);
+  const saveFood=food=>{
+    food.addedBy=food.addedBy||curUser;
+    const col=foodsCol();
+    if(col){const{photo,...rest}=food;col.doc(food.id).set(rest).catch(console.error);if(photo){const p=ls('photos')||{};p[food.id]=photo;ls('photos',p);}}
+    else{const next=editFood?foods.map(f=>f.id===food.id?food:f):[food,...foods];setFoods(next);ls('foods_cache',next);}
+    setShowAdd(false);setEditFood(null);
   };
 
-  const deleteFood = (id) => {
-    mutateFoods(foods.filter(f => f.id !== id));
-    deleteFromDB(id);
+  const deleteFood=id=>{
+    const col=foodsCol();
+    if(col)col.doc(id).delete().catch(console.error);
+    else{const next=foods.filter(f=>f.id!==id);setFoods(next);ls('foods_cache',next);}
+    const p=ls('photos')||{};delete p[id];ls('photos',p);
   };
 
-  const setStatus = (id, status) => {
-    mutateFoods(foods.map(f => f.id === id ? { ...f, status } : f));
+  const setStatus=(id,status)=>{
+    const col=foodsCol();
+    if(col)col.doc(id).update({status}).catch(console.error);
+    else{const next=foods.map(f=>f.id===id?{...f,status}:f);setFoods(next);ls('foods_cache',next);}
   };
 
-  const switchUser = () => {
-    const next = curUser === 'Romain' ? 'Manon' : 'Romain';
-    setCurUser(next); ls('user', next);
-  };
+  const foodsWithPhotos=useMemo(()=>{const photos=ls('photos')||{};return foods.map(f=>photos[f.id]?{...f,photo:photos[f.id]}:f);},[foods]);
 
-  const toggleCat = (id) => {
-    setActiveCats(p => p.includes(id) ? p.filter(c=>c!==id) : [...p, id]);
-  };
+  const switchUser=()=>{const n=curUser==='Romain'?'Manon':'Romain';setCurUser(n);ls('user',n);};
+  const toggleCat=id=>setActiveCats(p=>p.includes(id)?p.filter(c=>c!==id):[...p,id]);
 
-  // ── FILTER + SORT ──────────────────────────────────────────────
-  const displayed = useMemo(() => {
-    let r = [...foods];
-    if (!showConsumed) r = r.filter(f => f.status !== 'consomme');
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      r = r.filter(f =>
-        f.name.toLowerCase().includes(q) ||
-        (f.notes||'').toLowerCase().includes(q) ||
-        (CATS.find(c=>c.id===f.category)?.label||'').toLowerCase().includes(q)
-      );
-    }
-    if (activeCats.length) r = r.filter(f => activeCats.includes(f.category));
-    r.sort((a,b) => {
-      if (sortBy === 'dlc')  { if(!a.dlc) return 1; if(!b.dlc) return -1; return new Date(a.dlc)-new Date(b.dlc); }
-      if (sortBy === 'name') return a.name.localeCompare(b.name,'fr');
-      if (sortBy === 'new')  return new Date(b.dateAdded)-new Date(a.dateAdded);
-      if (sortBy === 'cat')  return (a.category||'').localeCompare(b.category||'');
+  const displayed=useMemo(()=>{
+    let r=[...foodsWithPhotos];
+    if(!showConsumed)r=r.filter(f=>f.status!=='consomme');
+    if(search.trim()){const q=search.toLowerCase();r=r.filter(f=>f.name.toLowerCase().includes(q)||(f.notes||'').toLowerCase().includes(q)||(CATS.find(c=>c.id===f.category)?.label||'').toLowerCase().includes(q));}
+    if(activeCats.length)r=r.filter(f=>activeCats.includes(f.category));
+    r.sort((a,b)=>{
+      if(sortBy==='dlc'){if(!a.dlc)return 1;if(!b.dlc)return-1;return new Date(a.dlc)-new Date(b.dlc);}
+      if(sortBy==='name')return a.name.localeCompare(b.name,'fr');
+      if(sortBy==='new')return new Date(b.dateAdded)-new Date(a.dateAdded);
+      if(sortBy==='cat')return(a.category||'').localeCompare(b.category||'');
       return 0;
     });
     return r;
-  }, [foods, search, activeCats, sortBy, showConsumed]);
+  },[foodsWithPhotos,search,activeCats,sortBy,showConsumed]);
 
-  // ── ALERT COUNTS ──────────────────────────────────────────────
-  const alerts = useMemo(() => {
-    const act = foods.filter(f => f.status !== 'consomme' && f.dlc);
-    return {
-      expired:  act.filter(f => daysUntil(f.dlc) < 0).length,
-      critical: act.filter(f => { const d=daysUntil(f.dlc); return d>=0 && d<=7; }).length,
-      warning:  act.filter(f => { const d=daysUntil(f.dlc); return d>7  && d<=15; }).length,
-    };
-  }, [foods]);
+  const alerts=useMemo(()=>{
+    const act=foods.filter(f=>f.status!=='consomme'&&f.dlc);
+    return{expired:act.filter(f=>daysUntil(f.dlc)<0).length,critical:act.filter(f=>{const d=daysUntil(f.dlc);return d>=0&&d<=7;}).length,warning:act.filter(f=>{const d=daysUntil(f.dlc);return d>7&&d<=15;}).length};
+  },[foods]);
 
-  // ── RENDER ────────────────────────────────────────────────────
-  if (!ready) return <Onboarding onDone={onboard}/>;
+  if(!ready)return<Onboarding onDone={onboard} initialJoinId={joinIdFromUrl}/>;
 
-  const fr = FREEZERS.find(f => f.id === settings.freezer);
-  const stockCount = foods.filter(f => f.status === 'stock').length;
+  const fr=FREEZERS.find(f=>f.id===settings.freezerType);
+  const stockCount=foods.filter(f=>f.status==='stock').length;
 
-  return (
+  return(
     <div>
-      {/* HEADER */}
       <div className="header">
-        <div>
-          <div className="header-title">❄️ CongélApp</div>
-          <div className="header-sub">{stockCount} aliment{stockCount!==1?'s':''} · {fr?.label?.split(' ').slice(0,2).join(' ')}{fbReady ? ' · 🔥' : ''}</div>
-        </div>
+        <div><div className="header-title">❄️ Congelo</div><div className="header-sub">{stockCount} aliment{stockCount!==1?'s':''} · {fr?.label?.split(' ').slice(0,2).join(' ')}{fbReady?' · 🔥':''}</div></div>
         <div className="header-right">
-          <button className="user-pill" onClick={switchUser}>
-            {curUser === 'Romain' ? '👨' : '👩'} {curUser}
-          </button>
-          <button className="icon-btn" onClick={() => setShowSettings(true)}>⚙️</button>
+          <button className="icon-btn" onClick={()=>setShowShare(true)} title="Partager">🔗</button>
+          <button className="user-pill" onClick={switchUser}>{curUser==='Romain'?'👨':'👩'} {curUser}</button>
+          <button className="icon-btn" onClick={()=>setShowSettings(true)}>⚙️</button>
         </div>
       </div>
-
-      {/* BANNERS */}
-      {alerts.expired  > 0 && (
-        <div className="banner expired">⚫ <span><strong>{alerts.expired} produit{alerts.expired>1?'s':''} périmé{alerts.expired>1?'s':''}</strong> — à vérifier ou jeter</span></div>
-      )}
-      {alerts.critical > 0 && (
-        <div className="banner critical">🔴 <span><strong>{alerts.critical} produit{alerts.critical>1?'s':''}</strong> à consommer dans moins de 7 jours</span></div>
-      )}
-      {alerts.warning  > 0 && (
-        <div className="banner warn">🟡 <span><strong>{alerts.warning} produit{alerts.warning>1?'s':''}</strong> à planifier dans les 15 jours</span></div>
-      )}
-
-      {/* SEARCH */}
-      <div className="search-wrap">
-        <span className="search-icon">🔍</span>
-        <input className="search-input" placeholder="Rechercher un aliment…"
-          value={search} onChange={e => setSearch(e.target.value)} />
-      </div>
-
-      {/* CATEGORY CHIPS */}
-      <div className="chips-scroll">
-        {CATS.map(c => (
-          <div key={c.id} className={`chip ${activeCats.includes(c.id)?'on':''}`} onClick={() => toggleCat(c.id)}>
-            {c.emoji} {c.label}
-          </div>
-        ))}
-      </div>
-
-      {/* SORT BAR */}
+      {alerts.expired>0&&<div className="banner expired">⚫ <span><strong>{alerts.expired} produit{alerts.expired>1?'s':''} périmé{alerts.expired>1?'s':''}</strong> — à vérifier ou jeter</span></div>}
+      {alerts.critical>0&&<div className="banner critical">🔴 <span><strong>{alerts.critical} produit{alerts.critical>1?'s':''}</strong> à consommer dans moins de 7 jours</span></div>}
+      {alerts.warning>0&&<div className="banner warn">🟡 <span><strong>{alerts.warning} produit{alerts.warning>1?'s':''}</strong> à planifier dans les 15 jours</span></div>}
+      <div className="search-wrap"><span className="search-icon">🔍</span><input className="search-input" placeholder="Rechercher un aliment…" value={search} onChange={e=>setSearch(e.target.value)}/></div>
+      <div className="chips-scroll">{CATS.map(c=><div key={c.id} className={`chip ${activeCats.includes(c.id)?'on':''}`} onClick={()=>toggleCat(c.id)}>{c.emoji} {c.label}</div>)}</div>
       <div className="sort-bar">
         <span className="sort-count">{displayed.length} résultat{displayed.length!==1?'s':''}</span>
         <div className="sort-controls">
-          <button className={`toggle-consumed-btn ${showConsumed?'on':''}`} onClick={() => setShowConsumed(!showConsumed)}>
-            {showConsumed ? '✓' : '○'} Consommés
-          </button>
-          <select className="sort-sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-            {SORTS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
+          <button className={`toggle-consumed-btn ${showConsumed?'on':''}`} onClick={()=>setShowConsumed(!showConsumed)}>{showConsumed?'✓':'○'} Consommés</button>
+          <select className="sort-sel" value={sortBy} onChange={e=>setSortBy(e.target.value)}>{SORTS.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select>
         </div>
       </div>
-
-      {/* LIST */}
       <div className="food-list">
-        {displayed.length === 0
-          ? <div className="empty">
-              <div className="empty-ico">🧊</div>
-              <h3>{foods.length === 0 ? 'Congélateur vide !' : 'Aucun résultat'}</h3>
-              <p>{foods.length === 0 ? 'Appuyez sur + pour ajouter votre premier aliment.' : 'Essayez d\'autres mots-clés ou filtres.'}</p>
-            </div>
-          : displayed.map(f => (
-              <FoodCard key={f.id} food={f}
-                onEdit={f => { setEditFood(f); setShowAdd(true); }}
-                onDelete={deleteFood}
-                onStatus={setStatus}
-              />
-            ))
+        {displayed.length===0
+          ?<div className="empty"><div className="empty-ico">🧊</div><h3>{foods.length===0?'Congélateur vide !':'Aucun résultat'}</h3><p>{foods.length===0?'Appuyez sur + pour ajouter votre premier aliment.':"Essayez d'autres mots-clés ou filtres."}</p></div>
+          :displayed.map(f=><FoodCard key={f.id} food={f} onEdit={f=>{setEditFood(f);setShowAdd(true);}} onDelete={deleteFood} onStatus={setStatus}/>)
         }
       </div>
-
-      {/* FAB */}
-      <button className="fab" onClick={() => { setEditFood(null); setShowAdd(true); }}>+</button>
-
-      {/* MODALS */}
-      {showAdd && (
-        <FoodModal
-          onSave={saveFood}
-          onClose={() => { setShowAdd(false); setEditFood(null); }}
-          freezerId={settings.freezer}
-          editData={editFood}
-        />
-      )}
-
-      {showSettings && (
-        <Settings
-          settings={settings}
-          onUpdate={updateSettings}
-          onClose={() => setShowSettings(false)}
-          fbReady={fbReady}
-        />
-      )}
+      <button className="fab-secondary" onClick={()=>setShowAI(true)} title="Importer par IA">🤖</button>
+      <button className="fab" onClick={()=>{setEditFood(null);setShowAdd(true);}}>+</button>
+      {showAdd&&<FoodModal onSave={saveFood} onClose={()=>{setShowAdd(false);setEditFood(null);}} freezerId={settings.freezerType} editData={editFood}/>}
+      {showAI&&<AIImportModal onAdd={food=>{food.addedBy=curUser;saveFood(food);}} onClose={()=>setShowAI(false)} freezerId={settings.freezerType} apiKey={settings.anthropicKey} currentUser={curUser}/>}
+      {showShare&&<ShareModal freezerId={freezerId} onClose={()=>setShowShare(false)}/>}
+      {showSettings&&<Settings settings={settings} fbCfg={fbCfgState} fbReady={fbReady} onUpdate={updateSettings} onClose={()=>setShowSettings(false)}/>}
     </div>
   );
 }
 
-// ── MOUNT ──────────────────────────────────────────────────────
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-
-// Service Worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
+if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
 </body>
 </html>
